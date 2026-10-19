@@ -1,59 +1,60 @@
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1">
-  <title>Qualis | AI Quality Assurance</title>
-  <link rel="stylesheet" href="./css/app.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Qualis | Contact Centre QA</title>
+  <link rel="stylesheet" href="/css/app.css">
 </head>
-
 <body>
-  <div class="app-shell">
+  <div class="shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">Q</div>
+        <span class="logo">Q</span>
         <div>
-          <strong>Qualis<span>AI</span></strong>
-          <small>Quality Intelligence</small>
+          <strong>qualis<span>AI</span></strong>
+          <small>CONTACT CENTRE QUALITY</small>
         </div>
       </div>
 
-      <div class="nav-label">WORKSPACE</div>
-      <nav id="navigation">
-        <button class="nav-link active"
-                data-page="evaluate">
-          <span>◈</span> Evaluate Interaction
+      <div class="nav-title">WORKSPACE</div>
+      <nav id="nav">
+        <button data-page="dashboard" class="selected">
+          ◫ &nbsp; QA Overview
         </button>
-        <button class="nav-link" data-page="settings">
-          <span>⚙</span> QA Configuration
+        <button data-page="evaluation">
+          ✧ &nbsp; Evaluate Interactions
+        </button>
+        <button data-page="configuration">
+          ⚙ &nbsp; QA Configuration
         </button>
       </nav>
 
-      <div class="sidebar-bottom">
-        <span class="status-dot"></span>
-        Gemini Evaluation Adapter
-        <small>Prototype Environment</small>
+      <div class="side-bottom">
+        <span class="dot"></span> Prototype environment
+        <small>Gemini evaluation · Cloudflare</small>
       </div>
     </aside>
 
-    <main class="main">
+    <main>
       <header class="topbar">
         <div>
-          <div class="eyebrow">CONTACT CENTRE INTELLIGENCE</div>
-          <h1 id="pageTitle">Interaction Evaluation</h1>
-          <p class="subtitle" id="pageSubtitle">
-            Evidence-driven quality assurance
+          <p class="overline">QUALITY INTELLIGENCE / SHARE</p>
+          <h1 id="pageTitle">QA Overview</h1>
+          <p class="sub" id="pageSub">
+            Agent quality, evidence and coaching in one workspace
           </p>
         </div>
-        <span class="environment-badge">QUALIS POC · V1</span>
+        <div class="top-right">
+          <span class="pill outline">POC · v2</span>
+          <span class="avatar">QA</span>
+        </div>
       </header>
-
-      <div id="appView"></div>
+      <div id="view"></div>
     </main>
   </div>
 
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>
