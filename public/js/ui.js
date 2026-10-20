@@ -1000,10 +1000,13 @@ export function configuration(rubric, selected) {
               .filter(x =>
                 x.group === group
               )
-              .map(x => `
-                <div class="rubric-row ${
-                  x.id === c.id ? "on" : ""
-                }">
+              .map(x => {
+                const activeChildren = (x.checkpoints || []).filter(a=>a.enabled===true).length;
+                const activeRules = linkedRules(x.id).filter(id=>
+                  rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled)).length;
+                const childActive = activeChildren + activeRules;
+                return `
+                <div class="rubric-row ${x.id === c.id ? "on" : ""} ${!x.enabled && childActive ? "qa-child-active-parent" : ""}">
                   <input
                     type="checkbox"
                     data-enabled="${esc(x.id)}"
@@ -1012,11 +1015,11 @@ export function configuration(rubric, selected) {
 
                   <button
                     data-criterion="${esc(x.id)}" aria-expanded="${x.id === c.id}">
-                    ${esc(criterionLabel(x,rubric))} <span class="qa-expand-indicator">${x.id === c.id ? "−" : "+"}</span>
+                    ${esc(criterionLabel(x,rubric))} ${!x.enabled && childActive ? `<span class="qa-child-active-badge" title="Parent unchecked; selected child checks still run">${childActive} active ${childActive===1?"child":"children"}</span>` : ""} <span class="qa-expand-indicator">${x.id === c.id ? "−" : "+"}</span>
                   </button>
                 </div>
                 ${x.id === c.id ? renderCriterionEditor(c, rubric) : ""}
-              `).join("")}
+              `; }).join("")}
           </div>
         `).join("")}
       </section>
