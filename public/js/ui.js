@@ -317,7 +317,7 @@ export function studio(state) {
   const canEvaluateSelected = !running &&
     calls.some(c =>
       c.key === selected &&
-      ["READY", "ERROR"].includes(c.status)
+      ["READY", "ERROR", "COMPLETE"].includes(c.status)
     );
 
   return `
@@ -369,6 +369,7 @@ Customer: I need help with points."></textarea>
                 id="pasteLoad">
                 Import pasted transcript
               </button>
+              <p id="import-feedback" class="muted" role="status" aria-live="polite">${esc(state.importFeedback || "")}</p>
             </details>
           </div>
 
@@ -388,7 +389,8 @@ Customer: I need help with points."></textarea>
             <button class="secondary"
               id="one"
               ${canEvaluateSelected ? "" : "disabled"}>
-              Evaluate selected
+              ${calls.find(c => c.key === selected)?.status === "COMPLETE"
+                ? "Re-evaluate selected" : "Evaluate selected"}
             </button>
 
             <button class="secondary"
