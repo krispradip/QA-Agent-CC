@@ -171,17 +171,25 @@ function executeRule(call,def,rule,rules) {
   evidence:[{line:0,quote:"Verified interaction evidence: "+spec[0]+" = "+value}]};
 }
 function combineCriterion(criterion,ai,checks){
- if(!checks.length)return ai;
- const anchors=[...(criterion.mode==="ai"?(ai?.anchors||[]):[]),...checks];
- const applicable=anchors.filter(a=>a.state!=="NA");
- const known=applicable.filter(a=>a.state==="MET"||a.state==="MISSED");
- const missing=applicable.filter(a=>a.state==="UNKNOWN");
- return {id:criterion.id,status:applicable.length&&!missing.length?"SCORED":"UNVERIFIABLE",
-  score:applicable.length&&!missing.length?
-   Math.round(100*known.filter(a=>a.state==="MET").length/applicable.length):null,
-  coverage:applicable.length?Math.round(100*known.length/applicable.length):0,
-  reason:missing.length?missing.map(a=>a.text+": "+(a.reason||"Evidence missing")).join("; "):
-   known.map(a=>a.reason||a.text).join("; "),anchors};
+  if(!checks.length && criterion.mode!=="ai")return ai;
+  const anchors=[...(criterion.mode==="ai"?(ai?.anchors||[]):[]),...checks];
+  const applicable=anchors.filter(a=>a.state!=="NA");
+  const known=applicable.filter(a=>a.state==="MET"||a.state==="MISSED");
+  const missing=applicable.filter(a=>a.state==="UNKNOWN");
+  const weightFor=a=>{
+    const anchor=criterion.checkpoints?.find(x=>x.id===a.id);
+    const raw=anchor ? anchor.points : criterion.ruleWeights?.[a.id];
+    return typeof raw==="number"&&Number.isFinite(raw)&&raw>=0?raw:1;
+  };
+  const total=applicable.reduce((sum,a)=>sum+weightFor(a),0);
+  const passed=known.filter(a=>a.state==="MET").reduce((sum,a)=>sum+weightFor(a),0);
+  const knownPoints=known.reduce((sum,a)=>sum+weightFor(a),0);
+  const scored=applicable.length>0&&!missing.length&&total>0;
+  return {id:criterion.id,status:scored?"SCORED":!applicable.length?"NOT_APPLICABLE":"UNVERIFIABLE",
+   score:scored?Math.round(100*passed/total):null,
+   coverage:total?Math.round(100*knownPoints/total):0,
+   reason:missing.length?missing.map(a=>a.text+": "+(a.reason||"Evidence missing")).join("; "):
+    known.map(a=>a.reason||a.text).join("; "),anchors};
 }
 /**
  * QA-ENGINE-ANCHORS
