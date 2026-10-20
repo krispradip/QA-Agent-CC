@@ -47,6 +47,7 @@ const state = {
   overviewAgent: "",
   period: { mode: "all", from: "", to: "" },
   search: "",
+  importFeedback: "",
 
   rubric: loadRubric(),
 
@@ -177,11 +178,17 @@ function filterRows() {
  * Require mapping when named speakers have unknown roles.
  */
 function load(text, filename) {
-  if (state.running) return;
+  if (state.running) {
+    notify("Wait for the current evaluation to finish before importing.", true);
+    return;
+  }
 
-  const merged = mergeImported(state.calls, parseExport(text, filename));
+  const incoming = parseExport(text, filename);
+  const merged = mergeImported(state.calls, incoming);
+  if (!merged.calls.length) {
+    throw Error("No usable interactions found. Check speaker labels and transcript format.");
+  }
   state.calls = merged.calls;
-  void persist();
 
   for (const call of state.calls) {
     if (
@@ -209,11 +216,11 @@ function load(text, filename) {
 
   state.page = "studio";
 
-  state.selected =
-    state.calls.find(c =>
-      c.status === "READY"
-    )?.key ||
-    state.calls[0].key;
+  // Focus on the transcript just imported, including one assessed previously.
+  const firstImported = incoming.find(c => c.status !== "DUPLICATE");
+  state.selected = firstImported?.key ||
+    state.calls.find(c => c.status === "READY")?.key ||
+    state.calls[0]?.key || null;
 
   state.agentFilter = "";
   state.overviewAgent = "";
@@ -224,14 +231,16 @@ function load(text, filename) {
     c => c.status === "READY"
   ).length;
 
-  state.message = `${merged.added} new · ${merged.alreadyKnown} already known · ${merged.skipped} duplicate rows · ${ready} ready`;
+  const complete = state.calls.filter(c => c.status === "COMPLETE").length;
+  state.message = `${merged.added} new · ${merged.alreadyKnown} existing · ${merged.skipped} duplicates · ${ready} ready · ${complete} completed`;
+  state.importFeedback = state.message + (merged.alreadyKnown
+    ? " · Existing evaluations retained; select Re-evaluate to assess again."
+    : " · Select Evaluate to start assessment.");
 
-  notify(
-    "Export parsed. Click Evaluate selected " +
-    "to run a live AI assessment."
-  );
-
+  // Save only after any manual speaker mapping has completed.
+  void persist();
   render();
+  notify(state.importFeedback);
 }
 
 const clone = value =>
@@ -291,7 +300,7 @@ async function run(all) {
         )
       ].filter(c =>
         c &&
-        ["READY", "ERROR"].includes(c.status)
+        ["READY", "ERROR", "COMPLETE"].includes(c.status)
       );
 
   if (!target.length) return;
@@ -560,12 +569,12 @@ root.addEventListener("click", event => {
 
   if (button.id === "pasteLoad") {
     try {
-      load(
-        $("#paste").value,
-        "paste.txt"
-      );
+      load($("#paste").value, "paste.txt");
     } catch (err) {
-      notify(err.message, true);
+      state.importFeedback = "Import failed: " + String(err.message || err);
+      const label = root.querySelector("#import-feedback");
+      if (label) label.textContent = state.importFeedback;
+      notify(state.importFeedback, true);
     }
     return;
   }
@@ -771,7 +780,10 @@ root.addEventListener(
           file.name
         );
       } catch (err) {
-        notify(err.message, true);
+        state.importFeedback = "Import failed: " + String(err.message || err);
+        const label = root.querySelector("#import-feedback");
+        if (label) label.textContent = state.importFeedback;
+        notify(state.importFeedback, true);
       }
 
       return;
@@ -823,7 +835,10 @@ render();
 
 // Load browser-local results after refresh.
 void loadHistory().then(calls => {
-  state.calls = calls.map(c => c.status === "RUNNING" ? { ...c, status: "READY" } : c);
-  state.selected = state.calls[0]?.key || null;
+  const restored = calls.map(c => c.status === "RUNNING" ? { ...c, status: "READY" } : c);
+  // Never overwrite a fresh upload if IndexedDB hydration finishes later.
+  state.calls = state.calls.length ? mergeImported(restored, state.calls).calls : restored;
+  state.selected = state.selected && state.calls.some(c => c.key === state.selected)
+    ? state.selected : state.calls[0]?.key || null;
   render();
 }).catch(e => notify("Local history unavailable: " + e.message, true));
