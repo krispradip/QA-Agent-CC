@@ -932,13 +932,13 @@ function renderCriterionEditor(c, rubric) {
       <small class="qa-check-help">${esc(def.description)} · ${esc(def.source)} evidence</small>
     </div>`;
   }).join("");
-  const qualitative=c.mode==="ai"?c.checkpoints.map((a,i)=>`
+  const qualitative=c.checkpoints.map((a,i)=>`
     <div class="qa-check-row">
       <label class="qa-check-name"><input type="checkbox" data-anchor-enabled="${i}" ${a.enabled!==false?"checked":""}><span>Qualitative check ${i+1}</span></label>
       <label class="qa-check-text"><small>Gemini evaluation instruction</small><textarea rows="2" data-anchor-text="${i}">${esc(a.text)}</textarea></label>
       <label class="qa-check-points"><small>Points</small><input type="number" min="0" max="100" step="0.5" data-anchor-points="${i}" value="${esc(a.points??1)}"></label>
     </div>`).join(""):"";
-  const noChecks=!ids.length&&c.mode!=="ai";
+  const noChecks=!ids.length&&!c.checkpoints.length;
   return `<div class="qa-inline-editor">
     <div class="qa-inline-heading"><strong>${esc(criterionLabel(c,rubric))}</strong><span class="tag">${esc(MODES[c.mode])}</span></div>
     <div class="qa-parent-settings">
@@ -947,7 +947,7 @@ function renderCriterionEditor(c, rubric) {
     </div>
     <label>Definition<textarea id="cDefinition" rows="2">${esc(c.definition)}</textarea></label>
     <label>Evaluator guidance<textarea id="cInstruction" rows="2">${esc(c.instructions)}</textarea></label>
-    <div class="qa-check-heading"><strong>Evaluation checks</strong><small>Enable each check, set its threshold or instruction, and assign its points. Disabled checks are excluded.</small></div>
+    <div class="qa-check-heading"><strong>Evaluation checks</strong><small>Enable each check, set its threshold or instruction, and assign its points. Checks requiring audio, CRM, or Genesys evidence cannot be verified from transcript alone.</small></div>
     ${rules}${qualitative}
     ${noChecks?`<p class="qa-check-help">This criterion currently requires ${esc(MODES[c.mode])}. No configured child checks are available; missing evidence will be reported as unverifiable.</p>`:""}
     <button class="primary" id="saveCriterion">Save parameter and evaluation checks</button>
