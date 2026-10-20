@@ -32,6 +32,51 @@ export const DETERMINISTIC_RULES = [
   connected:id==="greeting_time"||id==="fallback_greeting"
 }));
 
+/** QA-RULE-LINKS | Rule ownership belongs to a rubric criterion. */
+export const RULE_LINKS = {
+  greet7:["greeting_time"],
+  greet10:["fallback_greeting"],
+  opening:["mandatory_greeting"],
+  verification:["verification_steps"],
+  interruption:[],
+  deadAir:["silence"],
+  name:[],
+  solution:[],
+  systems:["ticket_creation","disposition_match"],
+  callback:["callback_sla"],
+  hold:["hold_single","hold_total","transfer_notice"],
+  closing:["closing_statement"],
+  rude:["prohibited_phrase"],
+  disconnect:["recording_compliance"],
+  survey:[],
+  assistance:[],
+  impact:[],
+  questions:[],
+  ack:[],
+  repeat:["repeat_contact","first_contact_resolution"],
+  empathy:[],
+  pace:[],
+  positive:[],
+  rapport:[],
+  tone:[],
+  conflict:[],
+  brand:[]
+};
+export const EXTRA_RULE_LINKS = {
+  hold:["hold_single","hold_total","transfer_notice"],
+  systems:["ticket_creation","disposition_match","after_call_work"],
+  callback:["callback_sla","escalation_sla"],
+  opening:["mandatory_greeting","queue_wait"],
+  closing:["closing_statement","interaction_duration"],
+  deadAir:["silence"],
+  verification:["verification_steps"],
+  repeat:["repeat_contact","first_contact_resolution"],
+  disconnect:["recording_compliance","transfer_count"],
+  solution:["channel_sla"],
+  impact:["prohibited_phrase"]
+};
+export function linkedRules(id) { return EXTRA_RULE_LINKS[id] || RULE_LINKS[id] || []; }
+
 /**
  * QA-CFG-001 — Qualis v2.2.0
  *
