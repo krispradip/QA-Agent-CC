@@ -1,3 +1,4 @@
+import { DETERMINISTIC_RULES, linkedRules } from "./config.js";
 /**
  * QA-ENGINE-001 | Qualis v2.2.0
  *
@@ -103,6 +104,85 @@ export function localFinding(call, criterion, rules) {
   };
 }
 
+
+/** QA-EXECUTE: deterministic checks, never infer absent event evidence as zero. */
+const sources = {
+ hold_single:["holdEvents","durationSeconds"],hold_total:["holdEvents","durationSeconds"],
+ silence:["silenceEvents","durationSeconds"],transfer_count:["transferEvents"],
+ transfer_notice:["transferEvents","noticeSeconds"],queue_wait:["queueWaitSeconds"],
+ after_call_work:["afterCallWorkSeconds"],interaction_duration:["interactionDurationSeconds"],
+ verification_steps:["verificationEvents"],ticket_creation:["ticketEvents"],
+ disposition_match:["dispositionMatches"],callback_sla:["callbackCompletionHours"],
+ escalation_sla:["escalationMinutes"],repeat_contact:["repeatContactDays"],
+ first_contact_resolution:["fcrObservedDays"],recording_compliance:["recordingEvents"],
+ channel_sla:["channelResponseSeconds"]
+};
+const phrases = {mandatory_greeting:"greetingTerms",mandatory_disclosure:"disclosureTerms",
+ prohibited_phrase:"prohibitedTerms",closing_statement:"closingTerms"};
+const minimum = new Set(["mandatory_greeting","mandatory_disclosure","closing_statement",
+ "verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"]);
+function executeRule(call,def,rule,rules) {
+ const id=def.id,limit=Number(rule.value);
+ const unknown=reason=>({id,text:def.name,state:"UNKNOWN",reason,evidence:[]});
+ if(!Number.isFinite(limit)||limit<0)return unknown("Invalid rule threshold");
+ const turns=call.turns||[];
+ if(id==="greeting_time"||id==="fallback_greeting"){
+  const first=turns.filter(t=>t.speaker==="agent").find(t=>
+   (rules.greetingTerms||[]).some(term=>term&&t.text.toLowerCase().includes(term.toLowerCase())));
+  if(!first||typeof first.seconds!=="number"||!Number.isFinite(first.seconds))
+   return unknown("Timestamped greeting is not available");
+  return {id,text:def.name,state:first.seconds<=limit?"MET":"MISSED",
+   reason:"Greeting at "+first.seconds+"s; threshold "+limit+"s",
+   evidence:[{line:first.line,quote:first.text}]};
+ }
+ if(phrases[id]){
+  const terms=rules[phrases[id]];
+  if(!Array.isArray(terms)||!terms.some(t=>String(t).trim()))
+   return unknown("Approved "+phrases[id]+" phrase list is not configured");
+  if(!turns.length)return unknown("Transcript is missing");
+  const matches=turns.filter(t=>t.speaker==="agent"&&terms.some(term=>
+   term&&t.text.toLowerCase().includes(String(term).toLowerCase())));
+  const met=id==="prohibited_phrase"?matches.length<=limit:matches.length>=limit;
+  return {id,text:def.name,state:met?"MET":"MISSED",
+   reason:matches.length+" matching agent turns; threshold "+limit,
+   evidence:matches.map(t=>({line:t.line,quote:t.text}))};
+ }
+ const spec=sources[id];
+ if(!spec)return unknown("Rule evaluator is not configured");
+ const evidence=call.evidence||{},raw=evidence[spec[0]];
+ if(raw===undefined||raw===null)return unknown("Missing verified "+spec[0]+" evidence ("+def.source+")");
+ let value;
+ if(Array.isArray(raw)){
+  if(spec[1]){
+   const nums=raw.map(x=>x?.[spec[1]]);
+   if(nums.some(n=>typeof n!=="number"||!Number.isFinite(n)||n<0))
+    return unknown("Incomplete "+spec[0]+" event data");
+   if(id==="transfer_notice"&&!nums.length)return unknown("No transfer event to assess");
+   value=id==="hold_total"?nums.reduce((a,b)=>a+b,0):
+    id==="hold_single"||id==="silence"?Math.max(0,...nums):
+    id==="transfer_notice"?Math.min(...nums):nums.length;
+  }else value=raw.length;
+ }else value=raw;
+ if(typeof value!=="number"||!Number.isFinite(value)||value<0)
+  return unknown("Invalid "+spec[0]+" evidence");
+ const met=minimum.has(id)?value>=limit:value<=limit;
+ return {id,text:def.name,state:met?"MET":"MISSED",
+  reason:"Observed "+value+"; threshold "+limit,
+  evidence:[{line:0,quote:"Verified interaction evidence: "+spec[0]+" = "+value}]};
+}
+function combineCriterion(criterion,ai,checks){
+ if(!checks.length)return ai;
+ const anchors=[...(criterion.mode==="ai"?(ai?.anchors||[]):[]),...checks];
+ const applicable=anchors.filter(a=>a.state!=="NA");
+ const known=applicable.filter(a=>a.state==="MET"||a.state==="MISSED");
+ const missing=applicable.filter(a=>a.state==="UNKNOWN");
+ return {id:criterion.id,status:applicable.length&&!missing.length?"SCORED":"UNVERIFIABLE",
+  score:applicable.length&&!missing.length?
+   Math.round(100*known.filter(a=>a.state==="MET").length/applicable.length):null,
+  coverage:applicable.length?Math.round(100*known.length/applicable.length):0,
+  reason:missing.length?missing.map(a=>a.text+": "+(a.reason||"Evidence missing")).join("; "):
+   known.map(a=>a.reason||a.text).join("; "),anchors};
+}
 /**
  * QA-ENGINE-ANCHORS
  *
@@ -302,12 +382,18 @@ export async function assess(
     c => c.enabled
   );
 
-  const local = new Map(
-    enabled.map(c => [
-      c.id,
-      localFinding(call, c, rubric.rules)
-    ])
-  );
+  const ruleMap = new Map((rubric.rules.deterministic || []).map(r=>[r.id,r]));
+  const checksById = new Map(enabled.map(c=>[c.id,
+    linkedRules(c.id).map(id=>{
+      const def=DETERMINISTIC_RULES.find(r=>r.id===id);
+      const rule=ruleMap.get(id);
+      return def && rule?.enabled ? executeRule(call,def,rule,rubric.rules) : null;
+    }).filter(Boolean)
+  ]));
+  const local = new Map(enabled.map(c=>[c.id,
+    combineCriterion(c, c.mode==="timing" ?
+      empty(c,"No active timing rule") : localFinding(call,c,rubric.rules), checksById.get(c.id))
+  ]));
 
   call.findings = enabled.map(
     c => local.get(c.id)
@@ -382,10 +468,7 @@ export async function assess(
 
     call.findings = enabled.map(c =>
       c.mode === "ai"
-        ? calculateCriterion(
-            c,
-            returned.get(c.id)
-          )
+        ? combineCriterion(c, calculateCriterion(c,returned.get(c.id)), checksById.get(c.id))
         : local.get(c.id)
     );
 
