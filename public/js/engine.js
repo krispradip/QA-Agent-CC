@@ -300,7 +300,6 @@ export function overall(findings, rubric) {
   );
 
   const relevant = findings.filter(f =>
-    byId.get(f.id)?.enabled &&
     Number(byId.get(f.id)?.weight) > 0
   );
 
@@ -322,24 +321,21 @@ export function overall(findings, rubric) {
     0
   );
 
-  const coverageWeight = relevant
-    .filter(f =>
-      f.status !== "NOT_APPLICABLE"
-    )
-    .reduce(
-      (s, f) =>
-        s + Number(byId.get(f.id).weight),
-      0
-    );
+  const coverageWeight = relevant.filter(f=>f.status!=="NOT_APPLICABLE")
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight),0);
+  const observedWeight = relevant.filter(f=>f.status!=="NOT_APPLICABLE")
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100),0);
+  const observedScoreWeight = relevant.filter(f=>f.status==="SCORED"&&f.score!==null)
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100),0);
+  const observedScoreSum = relevant.filter(f=>f.status==="SCORED"&&f.score!==null)
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100)*f.score,0);
 
   return {
-    score: denom
-      ? Math.round(num / denom)
-      : null,
+    score: observedScoreWeight ? Math.round(observedScoreSum / observedScoreWeight) : null,
 
     coverage: coverageWeight
       ? Math.round(
-          100 * denom / coverageWeight
+          100 * observedWeight / coverageWeight
         )
       : 0,
 
@@ -386,7 +382,11 @@ export async function assess(
 ) {
   call.status = "RUNNING";
 
-  const enabled = rubric.criteria.filter(c => c.enabled);
+  // Child activation is independent of the parent checkbox.
+  const enabled = rubric.criteria.filter(c =>
+    c.enabled || c.checkpoints?.some(a=>a.enabled!==false) ||
+    linkedRules(c.id).some(id=>rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled))
+  );
 
   const ruleMap = new Map((rubric.rules.deterministic || []).map(r=>[r.id,r]));
   const checksById = new Map(enabled.map(c=>[c.id,
