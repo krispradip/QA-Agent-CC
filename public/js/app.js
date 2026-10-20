@@ -658,29 +658,17 @@ root.addEventListener("click", event => {
     let newCheckpoints = c.checkpoints;
 
     if (c.mode === "ai") {
-      const lines = $("#cAnchors").value
-        .split(/\r?\n/)
-        .map(x => x.trim())
-        .filter(Boolean);
-
-      if (
-        lines.length < 1 ||
-        lines.length > 6 ||
-        lines.some(x => x.length > 250)
-      ) {
-        notify(
-          "Use between one and six short checkpoints, one per line.",
-          true
-        );
+      const inputs = [...root.querySelectorAll("[data-anchor-text]")];
+      const items = inputs.map(input => ({
+        id: c.id + "-" + (Number(input.dataset.anchorText) + 1),
+        text: input.value.trim(),
+        enabled: !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked
+      }));
+      if (!items.length || items.length > 12 || items.some(x=>!x.text || x.text.length>250)) {
+        notify("Each evaluation check requires a description (maximum 250 characters).",true);
         return;
       }
-
-      newCheckpoints = lines.map(
-        (text, i) => ({
-          id: `${c.id}-${i + 1}`,
-          text
-        })
-      );
+      newCheckpoints = items;
     }
 
     // Persist nested quantitative rules with the same rubric revision.
