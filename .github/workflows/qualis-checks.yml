@@ -1,0 +1,24 @@
+name: Qualis stability checks
+on:
+  push:
+    branches:
+      - release/qualis-stability-check
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - run: |
+          for file in public/js/*.js src/*.js; do
+            node --check "$file"
+          done

@@ -48,6 +48,7 @@ const state = {
   period: { mode: "all", from: "", to: "" },
   search: "",
   importFeedback: "",
+  pasteDraft: "",
 
   rubric: loadRubric(),
 
@@ -184,6 +185,8 @@ function load(text, filename) {
   }
 
   const incoming = parseExport(text, filename);
+  // Keep the original pasted transcript visible even if mapping or evaluation is blocked.
+  if (filename === "paste.txt") state.pasteDraft = text;
   const merged = mergeImported(state.calls, incoming);
   if (!merged.calls.length) {
     throw Error("No usable interactions found. Check speaker labels and transcript format.");
@@ -218,7 +221,10 @@ function load(text, filename) {
 
   // Focus on the transcript just imported, including one assessed previously.
   const firstImported = incoming.find(c => c.status !== "DUPLICATE");
-  state.selected = firstImported?.key ||
+  // Imported parser keys are temporary. Resolve the stable merged key instead.
+  const importedId = firstImported?.id;
+  const matchingMerged = state.calls.find(c => c.id === importedId && c.status !== "DUPLICATE");
+  state.selected = matchingMerged?.key ||
     state.calls.find(c => c.status === "READY")?.key ||
     state.calls[0]?.key || null;
 
@@ -303,7 +309,10 @@ async function run(all) {
         ["READY", "ERROR", "COMPLETE"].includes(c.status)
       );
 
-  if (!target.length) return;
+  if (!target.length) {
+    notify("No evaluable interaction selected. Check the import status and speaker mapping.", true);
+    return;
+  }
 
   /**
    * Lock the rubric during this batch.
@@ -569,7 +578,9 @@ root.addEventListener("click", event => {
 
   if (button.id === "pasteLoad") {
     try {
-      load($("#paste").value, "paste.txt");
+      const pasted = $("#paste").value;
+      state.pasteDraft = pasted;
+      load(pasted, "paste.txt");
     } catch (err) {
       state.importFeedback = "Import failed: " + String(err.message || err);
       const label = root.querySelector("#import-feedback");
@@ -825,6 +836,9 @@ root.addEventListener(
  * Live queue search.
  */
 root.addEventListener("input", event => {
+  if (event.target.id === "paste") {
+    state.pasteDraft = event.target.value;
+  }
   if (event.target.id === "search") {
     state.search = event.target.value;
     filterRows();
@@ -837,6 +851,8 @@ render();
 void loadHistory().then(calls => {
   const restored = calls.map(c => c.status === "RUNNING" ? { ...c, status: "READY" } : c);
   // Never overwrite a fresh upload if IndexedDB hydration finishes later.
+  // A fresh import is authoritative; late IndexedDB hydration must never
+  // replace its selected interaction, status, or transcript.
   state.calls = state.calls.length ? mergeImported(restored, state.calls).calls : restored;
   state.selected = state.selected && state.calls.some(c => c.key === state.selected)
     ? state.selected : state.calls[0]?.key || null;
