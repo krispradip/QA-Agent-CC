@@ -11,6 +11,7 @@
 import { GROUPS, MODES } from "./config.js";
 import { agents } from "./engine.js";
 import { renderDashboardSummary, renderScoreExplanation } from "./summary.js";
+import { coverageBreakdown } from "./reporting.js";
 
 export const esc = value =>
   String(value ?? "").replace(
@@ -109,7 +110,7 @@ function tableAgents(calls) {
  * QA-UI-OVERVIEW
  * Executive contact-centre quality view.
  */
-export function overview(calls, rubric, selectedAgent = "") {
+export function overview(calls, rubric, selectedAgent = "", period = { mode:"all" }, periodInfo = {}) {
   const completed = calls.filter(c =>
     c.status === "COMPLETE" &&
     c.score?.score !== null
@@ -175,6 +176,7 @@ export function overview(calls, rubric, selectedAgent = "") {
       </div>
     </section>
 
+    <section class="panel"><div class="panel-heading"><div><span class="kicker">REPORTING PERIOD</span><h3>Interaction date</h3></div><button id="clearHistory" class="secondary">Clear saved history</button></div><div class="filters"><select id="report-period"><option value="all" ${period.mode==="all"?"selected":""}>All time</option><option value="last7" ${period.mode==="last7"?"selected":""}>Last 7 days</option><option value="last30" ${period.mode==="last30"?"selected":""}>Last 30 days</option><option value="month" ${period.mode==="month"?"selected":""}>This month</option><option value="custom" ${period.mode==="custom"?"selected":""}>Custom date range</option></select>${period.mode==="custom"?`<label>From <input type="date" id="period-from" value="${esc(period.from||"")}"></label><label>To <input type="date" id="period-to" value="${esc(period.to||"")}"></label>`:""}</div><p class="muted">Uses interaction dates, not evaluation dates. ${periodInfo.undatedExcluded||0} undated records excluded. ${esc(periodInfo.warning||"")}</p></section>
     ${renderDashboardSummary(calls, selectedAgent)}
 
     <section class="panel">
@@ -661,6 +663,7 @@ export function callDetail(call, rubric) {
     </div>
 
     ${renderScoreExplanation(call)}
+    ${(() => { const x = coverageBreakdown(call, { criteria: call.meta?.criteria?.map(c => ({ ...c, mode: rubric.criteria.find(r => r.id === c.id)?.mode, enabled: true })) || rubric.criteria }); if (!x) return ""; return `<details class="qa-call-explainer" open><summary><strong>Why was coverage limited?</strong><span>Evidence gaps and requirements</span></summary>${x.groups.map(g=>`<div class="qa-coverage-reason"><b>${esc(g.title)} — ${g.percentOfApplicable}% of applicable rubric weight</b>${g.criteria.map(c=>`<p><strong>${esc(c.name)}</strong>: ${esc(c.reason)}</p>`).join("")}</div>`).join("") || "<p>No unverified criteria in this rubric.</p>"}<p class="muted">${x.notApplicable} criteria marked Not Applicable and excluded.</p></details>`; })()}
 
     ${call.error ? `
       <div class="error-note">
