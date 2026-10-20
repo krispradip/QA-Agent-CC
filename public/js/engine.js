@@ -414,9 +414,7 @@ export async function assess(
 
   onStage("rules", call);
 
-  const ai = enabled.filter(
-    c => c.mode === "ai"
-  );
+  const ai = enabled.filter(c => c.mode === "ai" && c.checkpoints.some(a=>a.enabled!==false));
 
   if (ai.length) {
     onStage("ai", call);
