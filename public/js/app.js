@@ -143,6 +143,8 @@ function notify(message, error = false) {
 
 function navigate(page) {
   if (state.running) return;
+  if (state.page === "config" && page !== "config" && !captureCriterionDraft()) return;
+  if (state.page === "config" && page !== "config") saveRubric(state.rubric);
 
   state.page = page;
   render();
@@ -505,6 +507,94 @@ function save(message) {
   notify(message);
 }
 
+
+/** Capture editable rubric fields without committing until Save all. */
+function captureCriterionDraft() {
+  if (state.page !== "config" || !root.querySelector("#cName")) return true;
+  const c = state.rubric.criteria.find(
+    x => x.id === state.criterion
+  );
+
+  const weight = Number(
+    $("#cWeight").value
+  );
+
+  if (
+    !c ||
+    !$("#cName").value.trim() ||
+    !Number.isFinite(weight) ||
+    weight < 0 ||
+    weight > 100
+  ) {
+    notify(
+      "Parameter name and weight 0–100 are required",
+      true
+    );
+    return false;
+  }
+
+  const name = $("#cName").value.trim();
+  const definition =
+    $("#cDefinition").value.trim();
+
+  const instructions =
+    $("#cInstruction").value.trim();
+
+  let newCheckpoints = c.checkpoints;
+
+  if (c.checkpoints.length) {
+    const inputs = [...root.querySelectorAll("[data-anchor-text]")];
+    const items = inputs.map(input => ({
+      id: c.id + "-" + (Number(input.dataset.anchorText) + 1),
+      text: input.value.trim(),
+      enabled: !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked,
+      points: Number(root.querySelector('[data-anchor-points="' + input.dataset.anchorText + '"]')?.value)
+    }));
+    if (!items.length || items.length > 12 || items.some(x=>!x.text || x.text.length>250 || !Number.isFinite(x.points) || x.points<0 || x.points>100)) {
+      notify("Each evaluation check requires a description (maximum 250 characters).",true);
+      return false;
+  }
+    newCheckpoints = items;
+  }
+
+  // Persist nested quantitative rules with the same rubric revision.
+  const editedRules = [...root.querySelectorAll("[data-rule-value]")].map(input => ({
+    id: input.dataset.ruleValue,
+    enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+    value: input.value.trim() === "" ? NaN : Number(input.value)
+  }));
+  if (editedRules.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
+    notify("Rule thresholds must be valid non-negative numbers.", true);
+    return false;
+  }
+  const ruleWeights = { ...(c.ruleWeights || {}) };
+  for (const input of root.querySelectorAll("[data-rule-points]")) {
+    const value = Number(input.value);
+    if (!Number.isFinite(value) || value < 0 || value > 100) {
+      notify("Each evaluation check needs points between 0 and 100.", true);
+      return false;
+  }
+    ruleWeights[input.dataset.rulePoints] = value;
+  }
+  const currentRules = state.rubric.rules.deterministic || [];
+  state.rubric.rules.deterministic = currentRules.map(rule =>
+    editedRules.find(x => x.id === rule.id) || rule
+  );
+  const greeting = state.rubric.rules.deterministic.find(x => x.id === "greeting_time");
+  const fallback = state.rubric.rules.deterministic.find(x => x.id === "fallback_greeting");
+  if (greeting) state.rubric.rules.greet7 = greeting.value;
+  if (fallback) state.rubric.rules.greet10 = fallback.value;
+  Object.assign(c, {
+    name,
+    definition,
+    instructions,
+    weight,
+    checkpoints: newCheckpoints,
+    ruleWeights
+  });
+
+  return true;
+}
 /**
  * Sidebar navigation.
  */
@@ -615,103 +705,15 @@ root.addEventListener("click", event => {
   }
 
   if (button.dataset.criterion) {
-    state.criterion =
-      button.dataset.criterion;
-
+    if (!captureCriterionDraft()) return;
+    state.criterion = button.dataset.criterion;
     render();
     return;
   }
 
-  /**
-   * Save one parameter.
-   */
-  if (button.id === "saveCriterion") {
-    const c = state.rubric.criteria.find(
-      x => x.id === state.criterion
-    );
-
-    const weight = Number(
-      $("#cWeight").value
-    );
-
-    if (
-      !c ||
-      !$("#cName").value.trim() ||
-      !Number.isFinite(weight) ||
-      weight < 0 ||
-      weight > 100
-    ) {
-      notify(
-        "Parameter name and weight 0–100 are required",
-        true
-      );
-      return;
-    }
-
-    const name = $("#cName").value.trim();
-    const definition =
-      $("#cDefinition").value.trim();
-
-    const instructions =
-      $("#cInstruction").value.trim();
-
-    let newCheckpoints = c.checkpoints;
-
-    if (c.checkpoints.length) {
-      const inputs = [...root.querySelectorAll("[data-anchor-text]")];
-      const items = inputs.map(input => ({
-        id: c.id + "-" + (Number(input.dataset.anchorText) + 1),
-        text: input.value.trim(),
-        enabled: !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked,
-        points: Number(root.querySelector('[data-anchor-points="' + input.dataset.anchorText + '"]')?.value)
-      }));
-      if (!items.length || items.length > 12 || items.some(x=>!x.text || x.text.length>250 || !Number.isFinite(x.points) || x.points<0 || x.points>100)) {
-        notify("Each evaluation check requires a description (maximum 250 characters).",true);
-        return;
-      }
-      newCheckpoints = items;
-    }
-
-    // Persist nested quantitative rules with the same rubric revision.
-    const editedRules = [...root.querySelectorAll("[data-rule-value]")].map(input => ({
-      id: input.dataset.ruleValue,
-      enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
-      value: input.value.trim() === "" ? NaN : Number(input.value)
-    }));
-    if (editedRules.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
-      notify("Rule thresholds must be valid non-negative numbers.", true);
-      return;
-    }
-    const ruleWeights = { ...(c.ruleWeights || {}) };
-    for (const input of root.querySelectorAll("[data-rule-points]")) {
-      const value = Number(input.value);
-      if (!Number.isFinite(value) || value < 0 || value > 100) {
-        notify("Each evaluation check needs points between 0 and 100.", true);
-        return;
-      }
-      ruleWeights[input.dataset.rulePoints] = value;
-    }
-    const currentRules = state.rubric.rules.deterministic || [];
-    state.rubric.rules.deterministic = currentRules.map(rule =>
-      editedRules.find(x => x.id === rule.id) || rule
-    );
-    const greeting = state.rubric.rules.deterministic.find(x => x.id === "greeting_time");
-    const fallback = state.rubric.rules.deterministic.find(x => x.id === "fallback_greeting");
-    if (greeting) state.rubric.rules.greet7 = greeting.value;
-    if (fallback) state.rubric.rules.greet10 = fallback.value;
-    Object.assign(c, {
-      name,
-      definition,
-      instructions,
-      weight,
-      checkpoints: newCheckpoints,
-      ruleWeights
-    });
-
-    save(
-      "Parameter saved. New evaluations " +
-      "will use this rubric revision."
-    );
+  if (button.id === "saveRubricAll") {
+    if (!captureCriterionDraft()) return;
+    save("All rubric changes saved. New assessments use this revision.");
     return;
   }
 
