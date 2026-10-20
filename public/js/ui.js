@@ -8,7 +8,7 @@
  * into HTML to avoid executing transcript content.
  */
 
-import { GROUPS, MODES, DETERMINISTIC_RULES } from "./config.js";
+import { GROUPS, MODES, DETERMINISTIC_RULES, linkedRules } from "./config.js";
 import { agents } from "./engine.js";
 import { renderDashboardSummary, renderScoreExplanation } from "./summary.js";
 import { coverageBreakdown } from "./reporting.js";
@@ -912,7 +912,22 @@ export function agentsView(state) {
  */
 
 /** Inline editor for the selected rubric criterion; preserves existing save IDs. */
-function renderCriterionEditor(c) {
+function renderCriterionEditor(c, rubric) {
+  const ids = linkedRules(c.id);
+  const rulesMarkup = ids.length ? `
+    <div class="qa-criterion-rules"><h4>Evaluation rules</h4>
+    <p class="muted">Enable the checks to apply under this criterion. Thresholds and selections are saved with the rubric.</p>
+    ${ids.map(id => {
+      const def = DETERMINISTIC_RULES.find(r => r.id === id);
+      if (!def) return "";
+      const value = rubric.rules.deterministic?.find(r => r.id === id) || def;
+      return `<div class="qa-rule-item">
+        <label class="qa-rule-toggle"><input type="checkbox" data-rule-enabled="${esc(id)}" ${value.enabled ? "checked" : ""}><strong>${esc(def.name)}</strong></label>
+        <div class="qa-rule-number"><input type="number" min="0" step="any" data-rule-value="${esc(id)}" value="${esc(value.value)}" aria-label="${esc(def.name)} threshold"><span>${esc(def.unit)}</span></div>
+        <small>${esc(def.description)} · ${def.connected ? "Transcript evaluator available" : "Requires additional evidence or evaluation support"}</small>
+      </div>`;
+    }).join("")}
+    </div>` : "";
   if (c.mode === "timing") {
     return `
       <div class="qa-inline-editor">
@@ -920,13 +935,13 @@ function renderCriterionEditor(c) {
           <strong>${esc(c.name)}</strong>
           <span class="tag">Linked deterministic rule</span>
         </div>
-        <p class="muted">The greeting threshold, enable switch and evidence requirements are configured in the Deterministic Rules Engine below. This criterion remains in the QA rubric so its scoring weight can be managed independently.</p>
+        <p class="muted">Configure the linked timing rule below. Its threshold is used by the evaluator when the criterion is enabled.</p>
         <label>Scoring weight</label>
         <input id="cWeight" type="number" min="0" max="100" value="${c.weight}">
         <input type="hidden" id="cName" value="${esc(c.name)}">
         <textarea id="cDefinition" hidden>${esc(c.definition)}</textarea>
         <textarea id="cInstruction" hidden>${esc(c.instructions)}</textarea>
-        <button class="primary" id="saveCriterion">Save scoring weight</button>
+        ${rulesMarkup}<button class="primary" id="saveCriterion">Save criterion and rules</button>
         <span class="save-status" id="saved"></span>
       </div>`;
   }
@@ -1018,6 +1033,7 @@ function renderCriterionEditor(c) {
             </p>
           `}
 
+          ${rulesMarkup}
           <button class="primary"
             id="saveCriterion">
             Save parameter
@@ -1091,36 +1107,13 @@ export function configuration(rubric, selected) {
                     ${esc(x.name)}
                   </button>
                 </div>
-                ${x.id === c.id ? renderCriterionEditor(c) : ""}
+                ${x.id === c.id ? renderCriterionEditor(c, rubric) : ""}
               `).join("")}
           </div>
         `).join("")}
       </section>
 
       <div>
-        <section class="panel qa-deterministic-library">
-          <div class="panel-heading">
-            <div><span class="kicker">DETERMINISTIC RULES ENGINE</span>
-              <h3>Configurable rule library</h3></div>
-            <span class="tag">23 PARAMETERS</span>
-          </div>
-          <p class="muted">Enable a rule and enter its numeric threshold. Rules requiring Genesys, CRM, audio or history are saved as configuration but are not evaluated until their evidence connector and execution logic are implemented. No unsupported rule will affect QA scores.</p>
-          <div class="qa-rule-list">
-            ${DETERMINISTIC_RULES.map(def => {
-              const saved = rubric.rules.deterministic?.find(x => x.id === def.id) || def;
-              return `<div class="qa-rule-item">
-                <label class="qa-rule-toggle"><input type="checkbox" data-rule-enabled="${esc(def.id)}" ${saved.enabled ? "checked" : ""}>
-                  <strong>${esc(def.name)}</strong></label>
-                <div class="qa-rule-number"><input type="number" min="0" step="any" data-rule-value="${esc(def.id)}" value="${esc(saved.value)}" aria-label="${esc(def.name)} threshold"><span>${esc(def.unit)}</span></div>
-                <small>${esc(def.description)} · Source: ${esc(def.source)} · ${def.connected ? "Engine connected" : "Connector / evaluation pending"}</small>
-              </div>`;
-            }).join("")}
-          </div>
-          <label>Recognized greeting terms · one per line</label>
-          <textarea id="rTerms">${esc(rubric.rules.greetingTerms.join("\n"))}</textarea>
-          <button class="primary" id="saveRules">Save deterministic rules</button>
-        </section>
-
         <section class="panel">
           <div class="panel-heading">
             <div>
