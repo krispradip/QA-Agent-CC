@@ -321,6 +321,26 @@ const checkpoints = {
   ]
 };
 
+
+// QA-CHECK-COVERAGE | Explicit evidence checks for previously unconfigured parameters.
+// These do not imply transcript-only proof; evidence-dependent checks remain unverifiable.
+const additionalChecks = {
+  greet7:["Greeting starts within the configured greeting threshold"],
+  greet10:["Fallback greeting starts within the configured fallback threshold"],
+  verification:["Follows approved customer verification procedure","Does not disclose account information before verification"],
+  interruption:["Allows the customer to finish speaking","Avoids interrupting key customer explanations"],
+  pace:["Maintains an understandable conversational pace","Adapts pace when the customer needs clarification"],
+  tone:["Maintains a calm, professional voice tone","Avoids audible hostility or dismissive delivery"],
+  deadAir:["Avoids unexplained extended silence","Explains pauses or system delays when appropriate"],
+  name:["Uses the customer's verified preferred name when appropriate","Meets the configured customer-name usage requirement"],
+  solution:["Provides a solution aligned with approved knowledge","Avoids unsupported promises or inaccurate policy statements"],
+  systems:["Completes required system actions","Records an accurate disposition or case outcome"],
+  callback:["Communicates the callback commitment","Completes the callback within the applicable SLA"],
+  disconnect:["Does not intentionally terminate the interaction improperly","Follows the correct process when the interaction disconnects"]
+};
+for (const [id,items] of Object.entries(additionalChecks)) {
+  if (!checkpoints[id]?.length) checkpoints[id] = items;
+}
 export const GROUPS = [
   ...new Set(specs.map(x => x[1]))
 ];
@@ -448,7 +468,7 @@ export function loadRubric() {
           mode: c.mode,
 
           checkpoints:
-            c.mode === "ai" &&
+            Array.isArray(old.checkpoints) &&
             Array.isArray(old.checkpoints) &&
             old.checkpoints.length >= 1
               ? old.checkpoints.map(a => ({ ...a, enabled: a.enabled !== false }))
