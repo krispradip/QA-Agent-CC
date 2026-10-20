@@ -64,16 +64,16 @@ export const RULE_LINKS = {
 };
 export const EXTRA_RULE_LINKS = {
   hold:["hold_single","hold_total","transfer_notice"],
-  systems:["ticket_creation","disposition_match","after_call_work"],
+  systems:["ticket_creation","disposition_match","after_call_work","transfer_count"],
   callback:["callback_sla","escalation_sla"],
-  opening:["mandatory_greeting","queue_wait"],
-  closing:["closing_statement","interaction_duration"],
+  opening:["mandatory_greeting"],
+  closing:["closing_statement"],
   deadAir:["silence"],
   verification:["verification_steps"],
   repeat:["repeat_contact","first_contact_resolution"],
-  disconnect:["recording_compliance","transfer_count"],
-  solution:["channel_sla"],
-  impact:["prohibited_phrase"]
+  disconnect:["recording_compliance"],
+  solution:["prohibited_phrase"],
+  impact:["interaction_duration","queue_wait","channel_sla"]
 };
 export function linkedRules(id) { return EXTRA_RULE_LINKS[id] || RULE_LINKS[id] || []; }
 
