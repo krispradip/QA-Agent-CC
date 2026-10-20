@@ -144,7 +144,7 @@ function notify(message, error = false) {
 function navigate(page) {
   if (state.running) return;
   if (state.page === "config" && page !== "config" && !captureCriterionDraft()) return;
-  if (state.page === "config" && page !== "config") saveRubric(state.rubric);
+
 
   state.page = page;
   render();
