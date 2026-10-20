@@ -1,5 +1,5 @@
 /**
- * QA-ENGINE-001 | Qualis v2.2.0
+ * QA-ENGINE-001 | Qualis v2.2.1
  *
  * Model-independent evidence scoring.
  *
@@ -39,6 +39,15 @@ function empty(criterion, note) {
  * Deterministic rules for transcript-observable criteria.
  */
 export function localFinding(call, criterion, rules) {
+  if (criterion.id === "systems" && criterion.mode === "external") {
+    const narration = call.turns.find(t => t.speaker === "agent" && /\b(check(ed|ing)?|look(ed|ing)? up|system|crm|updated?|submitted?|account details|i can see|let me verify|logged|recorded)\b/i.test(t.text));
+    const answer = empty(criterion, narration
+      ? "The agent describes a system-related step, but the transcript cannot verify that the action was performed."
+      : "No reliable system-action evidence is available in the transcript; application logs are needed for actual usage.");
+    if (narration) answer.anchors.push({ id: "systems-spoken", text: "Verbal system-use indicator (not scored)", state: "UNKNOWN", evidence: [{ line: narration.line, quote: narration.text }] });
+    return answer;
+  }
+
   if (criterion.mode !== "timing") {
     const reason =
       criterion.mode === "audio"
@@ -147,7 +156,8 @@ export function calculateCriterion(
           ? "UNKNOWN"
           : state,
 
-      evidence
+      evidence,
+      reason: String(b.reason || "").slice(0, 300)
     };
   });
 
@@ -188,10 +198,13 @@ export function calculateCriterion(
 
     coverage,
 
-    reason: String(
-      reported?.reason ||
-      "Insufficient evidence to score all checkpoints"
-    ),
+    reason: allKnown
+      ? String(reported?.reason || "All applicable checkpoints assessed")
+      : applicable.length === 0
+        ? "Not applicable to this conversation"
+        : "Not fully scored: " + anchors.filter(a => a.state === "UNKNOWN")
+            .map(a => a.text + (a.reason ? " (" + a.reason + ")" : ""))
+            .join("; ").slice(0, 800) || "Insufficient checkpoint evidence",
 
     anchors
   };
@@ -325,74 +338,60 @@ export async function assess(
   );
 
   if (ai.length) {
-    onStage("ai", call);
+    // Request smaller criterion groups to avoid truncated model output.
+    // More AI-verifiable criteria can increase calls/usage quota.
+    const batches = [];
+    for (let i = 0; i < ai.length; i += 10) {
+      batches.push(ai.slice(i, i + 10));
+    }
 
-    const response = await fetch(
-      "/api/evaluate",
-      {
+    const returned = new Map();
+    const redactedTurns = call.turns.map(t => ({
+      line: t.line,
+      speaker: t.speaker,
+      text: redact(t.text)
+    }));
+
+    for (let i = 0; i < batches.length; i++) {
+      onStage("ai", call);
+
+      const response = await fetch("/api/evaluate", {
         method: "POST",
         signal,
-
-        headers: {
-          "content-type": "application/json"
-        },
-
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           model: rubric.model,
           instructions: rubric.instructions,
-
-          criteria: ai.map(c => ({
+          criteria: batches[i].map(c => ({
             id: c.id,
             name: c.name,
             definition: c.definition,
             instructions: c.instructions,
             checkpoints: c.checkpoints
           })),
-
-          turns: call.turns.map(t => ({
-            line: t.line,
-            speaker: t.speaker,
-            text: redact(t.text)
-          }))
+          turns: redactedTurns
         })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const err = Error(payload.error || "AI service HTTP " + response.status);
+        err.status = response.status;
+        throw err;
       }
-    );
 
-    const payload = await response.json()
-      .catch(() => ({}));
-
-    if (!response.ok) {
-      const err = Error(
-        payload.error ||
-        `AI service HTTP ${response.status}`
-      );
-
-      err.status = response.status;
-      throw err;
+      for (const finding of payload.findings || []) {
+        if (batches[i].some(c => c.id === finding.id)) {
+          returned.set(finding.id, finding);
+        }
+      }
     }
 
     onStage("validating", call);
-
-    const returned = new Map(
-      (payload.findings || []).map(f => [
-        f.id,
-        f
-      ])
-    );
-
-    call.findings = enabled.map(c =>
-      c.mode === "ai"
-        ? calculateCriterion(
-            c,
-            returned.get(c.id)
-          )
-        : local.get(c.id)
-    );
-
-    call.score = overall(
-      call.findings,
-      rubric
-    );
+    call.findings = enabled.map(c => c.mode === "ai"
+      ? calculateCriterion(c, returned.get(c.id))
+      : local.get(c.id));
+    call.score = overall(call.findings, rubric);
   }
 
   call.status = "COMPLETE";
@@ -412,6 +411,8 @@ export async function assess(
       id: c.id,
       name: c.name,
       group: c.group,
+      mode: c.mode,
+      enabled: c.enabled,
       weight: c.weight,
       checkpoints: c.checkpoints
     }))

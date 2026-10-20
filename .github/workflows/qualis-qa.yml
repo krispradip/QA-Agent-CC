@@ -1,0 +1,31 @@
+name: Qualis QA checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, fix/transcript-first-qa-rubric]
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Qualis
+        uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check src/worker.js
+          node --check public/js/config.js
+          node --check public/js/engine.js
+          node --check public/js/reporting.js
+          node --check public/js/ui.js
+          node --check public/js/app.js
+      - name: Test QA rubric and Worker without external credentials
+        run: node --test tests/transcript-first.test.mjs

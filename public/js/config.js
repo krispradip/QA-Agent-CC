@@ -1,5 +1,5 @@
 /**
- * QA-CFG-001 — Qualis v2.2.0
+ * QA-CFG-001 — Qualis v2.2.1
  *
  * Canonical SHARE QA rubric.
  *
@@ -39,8 +39,8 @@ const specs = [
   ],
   [
     "verification", "CUSTOMER INFORMATION",
-    "Customer account/details verification", "external",
-    "Verify account details in accordance with the approved procedure."
+    "Customer account/details verification", "ai",
+    "Assesses verbal verification only; does not independently confirm CRM authentication. CRM may have already identified the customer. Additional questions are required only when the relevant business procedure demands them."
   ],
   [
     "interruption", "LISTENING SKILLS",
@@ -94,13 +94,13 @@ const specs = [
   ],
   [
     "name", "COMMUNICATION SKILLS",
-    "Use customer name twice", "external",
-    "Use the reliably established customer preferred name at least twice."
+    "Use customer name twice", "ai",
+    "Addresses the customer by their established name at least twice. CRM normally identifies the customer; the name need not be requested again. Count direct addresses, not mentions of the agent's own name."
   ],
   [
     "solution", "PROCESS & PROCEDURES",
-    "Complete and accurate information/solution", "external",
-    "Provide correct information according to current approved SOP."
+    "Complete and accurate information/solution", "ai",
+    "Evaluate relevance, clarity and usefulness of the spoken solution. Transcript quality scores do not independently prove factual accuracy against the live SOP or account records."
   ],
   [
     "systems", "PROCESS & PROCEDURES",
@@ -114,13 +114,13 @@ const specs = [
   ],
   [
     "callback", "PROCESS & PROCEDURES",
-    "Call back process", "external",
-    "Follow approved callback process."
+    "Call back process", "ai",
+    "Evaluate verbal callback handling when a callback is relevant. Actual CRM scheduling and completion cannot be confirmed from speech alone."
   ],
   [
     "hold", "PROCESS & PROCEDURES",
-    "Call hold process", "external",
-    "Observe call/chat hold permission and duration policy."
+    "Call hold process", "ai",
+    "Evaluate only the spoken hold process. Silence gaps do not prove actual hold duration; one-minute voice and two-minute chat limits need Genesys hold events."
   ],
   [
     "survey", "CALL CLOSING",
@@ -144,8 +144,8 @@ const specs = [
   ],
   [
     "disconnect", "PROFESSIONAL CONDUCT",
-    "No improper disconnection/nonresponse", "external",
-    "Do not cause improper disconnection; requires Genesys event evidence."
+    "No improper disconnection/nonresponse", "ai",
+    "Evaluate only transcript-observable inappropriate nonresponse and verbal closure, not which participant physically disconnected or whether technical events occurred."
   ]
 ];
 
@@ -158,6 +158,38 @@ const specs = [
  */
 
 const checkpoints = {
+  verification: [
+    "Uses the available customer/account context appropriately when relevant",
+    "When additional verbal verification is required for the request, asks for the appropriate details before proceeding"
+  ],
+
+  name: [
+    "Agent directly addresses the customer by a reliably established name at least twice across the complete dialogue"
+  ],
+
+  solution: [
+    "Proposed information or next steps address the customer's expressed need",
+    "Explanation is coherent, understandable and sufficiently complete for the stated request",
+    "Avoids unsupported guarantees or contradictions in the spoken guidance"
+  ],
+
+  callback: [
+    "Recognises the callback request or need where applicable",
+    "Explains or agrees realistic callback ownership and next steps when applicable",
+    "Confirms expectations (such as timing or next contact) when a callback is promised"
+  ],
+
+  hold: [
+    "Seeks permission or gives appropriate notice before a verbally identifiable hold",
+    "Explains the purpose of the hold when the situation requires it",
+    "Acknowledges the customer's return and resumes assistance appropriately"
+  ],
+
+  disconnect: [
+    "Responds to the customer's substantive requests instead of leaving them unanswered in the available dialogue",
+    "Does not abruptly stop a clearly ongoing conversation when the transcript contains a reliable normal end"
+  ],
+
   opening: [
     "Identifies SHARE or the service appropriately",
     "Introduces the agent or provides a professional identity",
@@ -249,12 +281,13 @@ export const MODES = {
   ai: "AI + anchored scoring",
   timing: "Deterministic timing",
   audio: "Audio evidence required",
-  external: "System / SOP evidence required"
+  external: "System execution proof required"
 };
 
 export function defaultRubric() {
   return {
-    version: "2.2.0",
+    version: "2.2.1",
+    schemaVersion: 2,
     revision: 1,
     model: "gemini-3.5-flash-lite",
 
@@ -269,6 +302,14 @@ export function defaultRubric() {
 
       greetingTerms: [
         "hello",
+        "hi",
+        "welcome",
+        "how may i help",
+        "how can i help",
+        "thanks for calling",
+        "thank you for contacting",
+        "السلام عليكم",
+        "أهلين",
         "good morning",
         "good afternoon",
         "good evening",
@@ -330,7 +371,8 @@ export function loadRubric() {
       ...fresh,
 
       revision: Number.isInteger(saved.revision)
-        ? saved.revision : 1,
+        ? saved.revision + (saved.schemaVersion === 2 ? 0 : 1) : 1,
+      schemaVersion: 2,
 
       model: [
         "gemini-3.5-flash-lite",
