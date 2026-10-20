@@ -198,7 +198,7 @@ const specs = [
   ],
   [
     "hold", "PROCESS & PROCEDURES",
-    "Call hold process", "external",
+    "Call hold process", "ai",
     "Observe call/chat hold permission and duration policy."
   ],
   [
@@ -237,6 +237,7 @@ const specs = [
  */
 
 const checkpoints = {
+  hold: ["Requests permission before placing the customer on hold", "Apologises or courteously explains the hold before initiating it", "Thanks the customer when returning from hold"],
   opening: [
     "Identifies SHARE or the service appropriately",
     "Introduces the agent or provides a professional identity",
@@ -380,7 +381,8 @@ export function defaultRubric() {
         checkpoints: (checkpoints[id] || []).map(
           (text, i) => ({
             id: `${id}-${i + 1}`,
-            text
+            text,
+            enabled: true
           })
         )
       })
@@ -449,7 +451,7 @@ export function loadRubric() {
             c.mode === "ai" &&
             Array.isArray(old.checkpoints) &&
             old.checkpoints.length >= 1
-              ? old.checkpoints
+              ? old.checkpoints.map(a => ({ ...a, enabled: a.enabled !== false }))
               : c.checkpoints
         };
       })
