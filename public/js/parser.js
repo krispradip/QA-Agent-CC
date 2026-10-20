@@ -208,6 +208,8 @@ function fromJSON(raw) {
       type: x.type || "Call",
       duration: x.duration || "",
       start: x.start || "",
+      // Verified event metrics must be explicitly provided by the JSON importer.
+      evidence: x.evidence && typeof x.evidence === "object" && !Array.isArray(x.evidence) ? x.evidence : {},
 
       turns: messages.map(t => {
         const label = tidy(
