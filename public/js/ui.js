@@ -1003,20 +1003,14 @@ function renderCriterionEditor(c, rubric) {
           </div>
 
           ${c.mode === "ai" ? `
-            <label>
-              Observable scoring checkpoints
-              · one per line
-            </label>
-
-            <textarea id="cAnchors"
-              rows="6">${
-                esc(
-                  c.checkpoints.map(a =>
-                    a.text
-                  ).join("\n")
-                )
-              }</textarea>
-
+            <label>Qualitative evaluation criteria</label>
+            <p class="muted">Select the checks to evaluate. Edit each instruction independently; disabled checks do not affect scoring.</p>
+            ${c.checkpoints.map((a,i)=>`
+              <div class="qa-rule-item">
+                <label><input type="checkbox" data-anchor-enabled="${i}" ${a.enabled!==false?"checked":""}> Evaluation check ${i+1}</label>
+                <textarea data-anchor-text="${i}" rows="2">${esc(a.text)}</textarea>
+              </div>
+            `).join("")}
             <p class="footnote">
               The model returns MET, MISSED,
               UNKNOWN or NA per checkpoint.
