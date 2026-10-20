@@ -10,6 +10,7 @@
 
 import { GROUPS, MODES } from "./config.js";
 import { agents } from "./engine.js";
+import { renderDashboardSummary, renderScoreExplanation } from "./summary.js";
 
 export const esc = value =>
   String(value ?? "").replace(
@@ -108,7 +109,7 @@ function tableAgents(calls) {
  * QA-UI-OVERVIEW
  * Executive contact-centre quality view.
  */
-export function overview(calls, rubric) {
+export function overview(calls, rubric, selectedAgent = "") {
   const completed = calls.filter(c =>
     c.status === "COMPLETE" &&
     c.score?.score !== null
@@ -124,7 +125,7 @@ export function overview(calls, rubric) {
         )
       : null;
 
-  const issues = calls
+  const issues = (selectedAgent ? calls.filter(c => c.agent === selectedAgent) : calls)
     .filter(c => c.status === "COMPLETE")
     .flatMap(c =>
       c.findings
@@ -174,31 +175,7 @@ export function overview(calls, rubric) {
       </div>
     </section>
 
-    <div class="metrics">
-      ${card(
-        "IMPORTED CALLS",
-        calls.length,
-        "Includes duplicate records"
-      )}
-
-      ${card(
-        "AGENTS",
-        agents(calls).length,
-        "Unique internal participants"
-      )}
-
-      ${card(
-        "EVALUATIONS DONE",
-        count(calls, "COMPLETE"),
-        "Live Gemini assessments"
-      )}
-
-      ${card(
-        "AVERAGE QA",
-        fmt(mean("score")),
-        `Average coverage ${fmt(mean("coverage"))}`
-      )}
-    </div>
+    ${renderDashboardSummary(calls, selectedAgent)}
 
     <section class="panel">
       <div class="panel-heading">
@@ -213,7 +190,7 @@ export function overview(calls, rubric) {
         </button>
       </div>
 
-      ${tableAgents(calls)}
+      ${tableAgents(selectedAgent ? calls.filter(c => c.agent === selectedAgent) : calls)}
     </section>
 
     <section class="panel">
@@ -682,6 +659,8 @@ export function callDetail(call, rubric) {
         ${chip(call.status)}
       </div>
     </div>
+
+    ${renderScoreExplanation(call)}
 
     ${call.error ? `
       <div class="error-note">
