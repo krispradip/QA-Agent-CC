@@ -207,7 +207,7 @@ export function calculateCriterion(
     ])
   );
 
-  const anchors = criterion.checkpoints.map(a => {
+  const anchors = criterion.checkpoints.filter(a=>a.enabled!==false).map(a => {
     const b = found.get(a.id) || {};
 
     const state = allowedStates.includes(b.state)
@@ -432,7 +432,7 @@ export async function assess(
             name: c.name,
             definition: c.definition,
             instructions: c.instructions,
-            checkpoints: c.checkpoints
+            checkpoints: c.checkpoints.filter(a=>a.enabled!==false)
           })),
 
           turns: call.turns.map(t => ({
