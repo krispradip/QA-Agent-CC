@@ -215,7 +215,7 @@ async function evaluate(request, env) {
     instructions.length > 5000 ||
     !Array.isArray(criteria) ||
     criteria.length < 1 ||
-    criteria.length > 14 ||
+    criteria.length > 27 ||
     !Array.isArray(turns) ||
     turns.length < 1 ||
     turns.length > 1100
