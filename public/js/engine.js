@@ -384,7 +384,7 @@ export async function assess(
 
   // Child activation is independent of the parent checkbox.
   const enabled = rubric.criteria.filter(c =>
-    c.enabled || c.checkpoints?.some(a=>a.enabled!==false) ||
+    c.enabled || c.checkpoints?.some(a=>a.enabled===true) ||
     linkedRules(c.id).some(id=>rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled))
   );
 
