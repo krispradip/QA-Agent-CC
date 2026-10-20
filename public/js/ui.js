@@ -919,130 +919,40 @@ function criterionLabel(c,rubric) {
   return Number.isFinite(threshold) ? "Greeting within " + threshold + " seconds" + (c.id==="greet10"?" (fallback)":"") : c.name;
 }
 function renderCriterionEditor(c, rubric) {
-  const ids = linkedRules(c.id);
-  const rulesMarkup = ids.length ? `
-    <div class="qa-criterion-rules"><h4>Evaluation rules</h4>
-    <p class="muted">Enable the checks to apply under this criterion. Thresholds and selections are saved with the rubric.</p>
-    ${ids.map(id => {
-      const def = DETERMINISTIC_RULES.find(r => r.id === id);
-      if (!def) return "";
-      const value = rubric.rules.deterministic?.find(r => r.id === id) || def;
-      return `<div class="qa-rule-item">
-        <label class="qa-rule-toggle"><input type="checkbox" data-rule-enabled="${esc(id)}" ${value.enabled ? "checked" : ""}><strong>${esc(def.name)}</strong></label>
-        <div class="qa-rule-number"><input type="number" min="0" step="any" data-rule-value="${esc(id)}" value="${esc(value.value)}" aria-label="${esc(def.name)} threshold"><span>${esc(def.unit)}</span></div>
-        <small>${esc(def.description)} · ${def.connected ? "Transcript evaluator available" : "Requires additional evidence or evaluation support"}</small>
-      </div>`;
-    }).join("")}
-    </div>` : "";
-  if (c.mode === "timing") {
-    return `
-      <div class="qa-inline-editor">
-        <div class="qa-inline-heading">
-          <strong>${esc(c.name)}</strong>
-          <span class="tag">Linked deterministic rule</span>
-        </div>
-        <p class="muted">Configure the linked timing rule below. Its threshold is used by the evaluator when the criterion is enabled.</p>
-        <label>Scoring weight</label>
-        <input id="cWeight" type="number" min="0" max="100" value="${c.weight}">
-        <input type="hidden" id="cName" value="${esc(c.name)}">
-        <textarea id="cDefinition" hidden>${esc(c.definition)}</textarea>
-        <textarea id="cInstruction" hidden>${esc(c.instructions)}</textarea>
-        ${rulesMarkup}<button class="primary" id="saveCriterion">Save criterion and rules</button>
-        <span class="save-status" id="saved"></span>
-      </div>`;
-  }
-  return `
-        <div class="qa-inline-editor">
-          <div class="panel-heading">
-            <div>
-              <span class="kicker">
-                EDIT SELECTED PARAMETER
-              </span>
-
-              <h3>${esc(c.name)}</h3>
-            </div>
-
-            <span class="tag">
-              ${esc(MODES[c.mode])}
-            </span>
-          </div>
-
-          <label>Main criteria</label>
-          <input disabled
-            value="${esc(c.group)}">
-
-          <label>Parameter name</label>
-          <input id="cName"
-            value="${esc(c.name)}">
-
-          <label>Definition</label>
-          <textarea id="cDefinition">${
-            esc(c.definition)
-          }</textarea>
-
-          <label>QA evaluator instruction</label>
-          <textarea id="cInstruction">${
-            esc(c.instructions)
-          }</textarea>
-
-          <div class="form-grid">
-            <div>
-              <label>Scoring weight</label>
-              <input id="cWeight"
-                type="number"
-                min="0"
-                max="100"
-                value="${c.weight}">
-            </div>
-
-            <div>
-              <label>Evidence method</label>
-              <input disabled
-                value="${esc(MODES[c.mode])}">
-            </div>
-          </div>
-
-          ${c.mode === "ai" ? `
-            <label>Qualitative evaluation criteria</label>
-            <p class="muted">Select the checks to evaluate. Edit each instruction independently; disabled checks do not affect scoring.</p>
-            ${c.checkpoints.map((a,i)=>`
-              <div class="qa-rule-item">
-                <label><input type="checkbox" data-anchor-enabled="${i}" ${a.enabled!==false?"checked":""}> Evaluation check ${i+1}</label>
-                <textarea data-anchor-text="${i}" rows="2">${esc(a.text)}</textarea>
-              </div>
-            `).join("")}
-            <p class="footnote">
-              The model returns MET, MISSED,
-              UNKNOWN or NA per checkpoint.
-              Qualis, not Gemini, calculates
-              the percentage. A parameter is
-              scored only when every applicable
-              checkpoint is supported.
-            </p>
-          ` : `
-            <p class="footnote">
-              This parameter requires ${
-                c.mode === "timing"
-                  ? "reliable timestamp and greeting evidence"
-                  : c.mode === "audio"
-                    ? "audio or approved event records"
-                    : "verified external evidence"
-              }.
-              Editing a description cannot
-              create missing evidence.
-            </p>
-          `}
-
-          ${rulesMarkup}
-          <button class="primary"
-            id="saveCriterion">
-            Save parameter
-          </button>
-
-          <span class="save-status"
-            id="saved"></span>
-        </div>
-  `;
+  const ids=linkedRules(c.id);
+  const rules=ids.map(id=>{
+    const def=DETERMINISTIC_RULES.find(r=>r.id===id);
+    if(!def)return "";
+    const setting=rubric.rules.deterministic?.find(r=>r.id===id)||def;
+    const points=c.ruleWeights?.[id]??1;
+    return `<div class="qa-check-row">
+      <label class="qa-check-name"><input type="checkbox" data-rule-enabled="${esc(id)}" ${setting.enabled?"checked":""}><span>${esc(def.name)}</span></label>
+      <label class="qa-check-value"><small>Threshold (${esc(def.unit)})</small><input type="number" min="0" step="any" data-rule-value="${esc(id)}" value="${esc(setting.value)}"></label>
+      <label class="qa-check-points"><small>Points</small><input type="number" min="0" max="100" step="0.5" data-rule-points="${esc(id)}" value="${esc(points)}"></label>
+      <small class="qa-check-help">${esc(def.description)} · ${esc(def.source)} evidence</small>
+    </div>`;
+  }).join("");
+  const qualitative=c.mode==="ai"?c.checkpoints.map((a,i)=>`
+    <div class="qa-check-row">
+      <label class="qa-check-name"><input type="checkbox" data-anchor-enabled="${i}" ${a.enabled!==false?"checked":""}><span>Qualitative check ${i+1}</span></label>
+      <label class="qa-check-text"><small>Gemini evaluation instruction</small><textarea rows="2" data-anchor-text="${i}">${esc(a.text)}</textarea></label>
+      <label class="qa-check-points"><small>Points</small><input type="number" min="0" max="100" step="0.5" data-anchor-points="${i}" value="${esc(a.points??1)}"></label>
+    </div>`).join(""):"";
+  const noChecks=!ids.length&&c.mode!=="ai";
+  return `<div class="qa-inline-editor">
+    <div class="qa-inline-heading"><strong>${esc(criterionLabel(c,rubric))}</strong><span class="tag">${esc(MODES[c.mode])}</span></div>
+    <div class="qa-parent-settings">
+      <label>Rubric parameter name<input id="cName" value="${esc(c.name)}"></label>
+      <label>Parent weight<input id="cWeight" type="number" min="0" max="100" step="0.5" value="${esc(c.weight)}"></label>
+    </div>
+    <label>Definition<textarea id="cDefinition" rows="2">${esc(c.definition)}</textarea></label>
+    <label>Evaluator guidance<textarea id="cInstruction" rows="2">${esc(c.instructions)}</textarea></label>
+    <div class="qa-check-heading"><strong>Evaluation checks</strong><small>Enable each check, set its threshold or instruction, and assign its points. Disabled checks are excluded.</small></div>
+    ${rules}${qualitative}
+    ${noChecks?`<p class="qa-check-help">This criterion currently requires ${esc(MODES[c.mode])}. No configured child checks are available; missing evidence will be reported as unverifiable.</p>`:""}
+    <button class="primary" id="saveCriterion">Save parameter and evaluation checks</button>
+    <span class="save-status" id="saved"></span>
+  </div>`;
 }
 
 export function configuration(rubric, selected) {
@@ -1069,9 +979,7 @@ export function configuration(rubric, selected) {
         </div>
 
         <p class="muted">
-          All criteria are editable.
-          Settings apply to subsequent evaluations
-          without modifying JavaScript.
+          Select a parameter to expand its evaluation checks. Configure each check and its points, then save. Settings persist in this browser.
         </p>
 
         ${GROUPS.map(group => `
