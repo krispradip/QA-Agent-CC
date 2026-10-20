@@ -657,7 +657,7 @@ root.addEventListener("click", event => {
 
     let newCheckpoints = c.checkpoints;
 
-    if (c.mode === "ai") {
+    if (c.checkpoints.length) {
       const inputs = [...root.querySelectorAll("[data-anchor-text]")];
       const items = inputs.map(input => ({
         id: c.id + "-" + (Number(input.dataset.anchorText) + 1),
