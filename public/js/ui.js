@@ -950,8 +950,7 @@ function renderCriterionEditor(c, rubric) {
     <div class="qa-check-heading"><strong>Evaluation checks</strong><small>Enable each check, set its threshold or instruction, and assign its points. Checks requiring audio, CRM, or Genesys evidence cannot be verified from transcript alone.</small></div>
     ${rules}${qualitative}
     ${noChecks?`<p class="qa-check-help">This criterion currently requires ${esc(MODES[c.mode])}. No configured child checks are available; missing evidence will be reported as unverifiable.</p>`:""}
-    <button class="primary" id="saveCriterion">Save parameter and evaluation checks</button>
-    <span class="save-status" id="saved"></span>
+
   </div>`;
 }
 
@@ -963,6 +962,7 @@ export function configuration(rubric, selected) {
 
   return `
     <div class="configuration">
+      <div class="qa-floating-save"><span>Rubric changes</span><button type="button" class="primary" id="saveRubricAll">Save all changes</button></div>
       <section class="panel index">
         <div class="panel-heading">
           <div>
