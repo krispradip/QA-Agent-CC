@@ -22,20 +22,10 @@ const models = new Set([
 ]);
 
 const aiIds = new Set([
-  "opening",
-  "impact",
-  "questions",
-  "ack",
-  "repeat",
-  "empathy",
-  "positive",
-  "rapport",
-  "conflict",
-  "brand",
-  "survey",
-  "assistance",
-  "closing",
-  "rude"
+  "greet7","greet10","opening","impact","questions","verification",
+  "interruption","ack","repeat","empathy","pace","positive","rapport",
+  "tone","conflict","deadAir","name","solution","systems","brand",
+  "callback","hold","survey","assistance","closing","rude","disconnect"
 ]);
 
 const states = new Set([
@@ -245,7 +235,7 @@ async function evaluate(request, env) {
       !aiIds.has(c.id) ||
       !Array.isArray(c.checkpoints) ||
       !c.checkpoints.length ||
-      c.checkpoints.length > 6 ||
+      c.checkpoints.length > 12 ||
       c.checkpoints.some(a =>
         typeof a.id !== "string" ||
         !a.id.startsWith(c.id + "-") ||
@@ -451,7 +441,9 @@ Return complete JSON matching the schema.
                 turns: turns.map(t => ({
                   line: t.line,
                   speaker: t.speaker,
-                  text: t.text
+                  text: t.text,
+                  timestamp: safe(t.timestamp || "", 64),
+                  seconds: Number.isFinite(t.seconds) ? t.seconds : null
                 }))
               })
             }]
