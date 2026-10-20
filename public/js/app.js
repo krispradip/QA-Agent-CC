@@ -662,9 +662,10 @@ root.addEventListener("click", event => {
       const items = inputs.map(input => ({
         id: c.id + "-" + (Number(input.dataset.anchorText) + 1),
         text: input.value.trim(),
-        enabled: !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked
+        enabled: !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked,
+        points: Number(root.querySelector('[data-anchor-points="' + input.dataset.anchorText + '"]')?.value)
       }));
-      if (!items.length || items.length > 12 || items.some(x=>!x.text || x.text.length>250)) {
+      if (!items.length || items.length > 12 || items.some(x=>!x.text || x.text.length>250 || !Number.isFinite(x.points) || x.points<0 || x.points>100)) {
         notify("Each evaluation check requires a description (maximum 250 characters).",true);
         return;
       }
@@ -681,6 +682,15 @@ root.addEventListener("click", event => {
       notify("Rule thresholds must be valid non-negative numbers.", true);
       return;
     }
+    const ruleWeights = { ...(c.ruleWeights || {}) };
+    for (const input of root.querySelectorAll("[data-rule-points]")) {
+      const value = Number(input.value);
+      if (!Number.isFinite(value) || value < 0 || value > 100) {
+        notify("Each evaluation check needs points between 0 and 100.", true);
+        return;
+      }
+      ruleWeights[input.dataset.rulePoints] = value;
+    }
     const currentRules = state.rubric.rules.deterministic || [];
     state.rubric.rules.deterministic = currentRules.map(rule =>
       editedRules.find(x => x.id === rule.id) || rule
@@ -694,7 +704,8 @@ root.addEventListener("click", event => {
       definition,
       instructions,
       weight,
-      checkpoints: newCheckpoints
+      checkpoints: newCheckpoints,
+      ruleWeights
     });
 
     save(
