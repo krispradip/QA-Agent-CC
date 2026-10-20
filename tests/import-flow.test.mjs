@@ -88,7 +88,7 @@ test("real app controller handles paste and shows an enabled Evaluate selected b
   click({ id: "pasteLoad" });
   assert.match(root.innerHTML, /id="one"[^>]*>\s*Evaluate selected/);
   assert.match(root.innerHTML, /1 new/);
-  assert.match(root.innerHTML, /Agent \/ INTERACTION/);
+  assert.match(root.innerHTML, /AGENT\s*\/\s*INTERACTION/);
   assert.match(element("#notice").textContent, /1 new/);
   // Reimport is not a no-op: the same record stays available for selection.
   element("#paste").value = "Agent: Hello, welcome to SHARE.\nCustomer: Hi, I need help.";
