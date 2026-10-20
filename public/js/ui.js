@@ -8,7 +8,7 @@
  * into HTML to avoid executing transcript content.
  */
 
-import { GROUPS, MODES } from "./config.js";
+import { GROUPS, MODES, DETERMINISTIC_RULES } from "./config.js";
 import { agents } from "./engine.js";
 import { renderDashboardSummary, renderScoreExplanation } from "./summary.js";
 import { coverageBreakdown } from "./reporting.js";
@@ -1081,57 +1081,27 @@ export function configuration(rubric, selected) {
       </section>
 
       <div>
-        <section class="panel">
+        <section class="panel qa-deterministic-library">
           <div class="panel-heading">
-            <div>
-              <span class="kicker">
-                RULES ENGINE
-              </span>
-
-              <h3>Objective conditions</h3>
-            </div>
+            <div><span class="kicker">DETERMINISTIC RULES ENGINE</span>
+              <h3>Configurable rule library</h3></div>
+            <span class="tag">23 PARAMETERS</span>
           </div>
-
-          <div class="form-grid">
-            <div>
-              <label>Greeting (seconds)</label>
-              <input
-                id="rGreet7"
-                type="number"
-                min="0"
-                max="60"
-                value="${rubric.rules.greet7}">
-            </div>
-
-            <div>
-              <label>
-                Fallback greeting (seconds)
-              </label>
-
-              <input
-                id="rGreet10"
-                type="number"
-                min="0"
-                max="60"
-                value="${rubric.rules.greet10}">
-            </div>
+          <p class="muted">Enable a rule and enter its numeric threshold. Rules requiring Genesys, CRM, audio or history are saved as configuration but are not evaluated until their evidence connector and execution logic are implemented. No unsupported rule will affect QA scores.</p>
+          <div class="qa-rule-list">
+            ${DETERMINISTIC_RULES.map(def => {
+              const saved = rubric.rules.deterministic?.find(x => x.id === def.id) || def;
+              return `<div class="qa-rule-item">
+                <label class="qa-rule-toggle"><input type="checkbox" data-rule-enabled="${esc(def.id)}" ${saved.enabled ? "checked" : ""}>
+                  <strong>${esc(def.name)}</strong></label>
+                <div class="qa-rule-number"><input type="number" min="0" step="any" data-rule-value="${esc(def.id)}" value="${esc(saved.value)}" aria-label="${esc(def.name)} threshold"><span>${esc(def.unit)}</span></div>
+                <small>${esc(def.description)} · Source: ${esc(def.source)} · ${def.connected ? "Engine connected" : "Connector / evaluation pending"}</small>
+              </div>`;
+            }).join("")}
           </div>
-
-          <label>
-            Recognized greeting terms
-            · one per line
-          </label>
-
-          <textarea id="rTerms">${
-            esc(
-              rubric.rules.greetingTerms.join("\n")
-            )
-          }</textarea>
-
-          <button class="secondary"
-            id="saveRules">
-            Save rules
-          </button>
+          <label>Recognized greeting terms · one per line</label>
+          <textarea id="rTerms">${esc(rubric.rules.greetingTerms.join("\n"))}</textarea>
+          <button class="primary" id="saveRules">Save deterministic rules</button>
         </section>
 
         <section class="panel">
