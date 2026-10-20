@@ -722,7 +722,7 @@ root.addEventListener("click", event => {
     state.rubric.rules.greet7 = first.value;
     state.rubric.rules.greet10 = fallback.value;
     state.rubric.rules.greetingTerms = $("#rTerms").value
-      .split(/\\r?\\n/).map(x => x.trim()).filter(Boolean);
+      .split(/\r?\n/).map(x => x.trim()).filter(Boolean);
     save("Deterministic rules saved. Only connected rules are executed; pending rules do not change scoring.");
     return;
   }
