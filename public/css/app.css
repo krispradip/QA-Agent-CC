@@ -1369,3 +1369,8 @@ footer {
 .qa-rule-item small{grid-column:1/-1;color:#758d91;line-height:1.45}
 @media(max-width:1050px){.qa-rule-list{grid-template-columns:1fr}}
 @media(max-width:450px){.qa-rule-item{grid-template-columns:1fr}.qa-rule-number input{width:120px}}
+
+/* QA-RUBRIC-RULES | Rule controls nested under their parent criterion */
+.qa-criterion-rules{border-top:1px solid #dceae5;margin-top:15px;padding-top:14px}
+.qa-criterion-rules h4{margin:0 0 6px;font-size:13px;color:#205c57}
+.qa-criterion-rules .qa-rule-item{margin:10px 0}
