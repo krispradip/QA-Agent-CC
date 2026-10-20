@@ -73,7 +73,7 @@ export const EXTRA_RULE_LINKS = {
   repeat:["repeat_contact","first_contact_resolution"],
   disconnect:["recording_compliance"],
   solution:["prohibited_phrase"],
-  impact:["interaction_duration","queue_wait","channel_sla"]
+  impact:[]
 };
 export function linkedRules(id) { return EXTRA_RULE_LINKS[id] || RULE_LINKS[id] || []; }
 
