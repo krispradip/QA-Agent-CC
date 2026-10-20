@@ -13,7 +13,7 @@ const moved = [
   "verification", "name", "solution", "callback", "hold", "disconnect"
 ];
 
-test("27 criteria maintained, seven formerly external checks now transcript-assessable", () => {
+test("27 criteria maintained, six formerly external checks now transcript-assessable", () => {
   const rubric = defaultRubric();
   assert.equal(rubric.criteria.length, 27);
   for (const id of moved) {
