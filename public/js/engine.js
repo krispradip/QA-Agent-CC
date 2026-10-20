@@ -184,9 +184,9 @@ function combineCriterion(criterion,ai,checks){
   const total=applicable.reduce((sum,a)=>sum+weightFor(a),0);
   const passed=known.filter(a=>a.state==="MET").reduce((sum,a)=>sum+weightFor(a),0);
   const knownPoints=known.reduce((sum,a)=>sum+weightFor(a),0);
-  const scored=applicable.length>0&&!missing.length&&total>0;
+  const scored=known.length>0&&knownPoints>0;
   return {id:criterion.id,status:scored?"SCORED":!applicable.length?"NOT_APPLICABLE":"UNVERIFIABLE",
-   score:scored?Math.round(100*passed/total):null,
+   score:scored?Math.round(100*passed/knownPoints):null,
    coverage:total?Math.round(100*knownPoints/total):0,
    reason:missing.length?missing.map(a=>a.text+": "+(a.reason||"Evidence missing")).join("; "):
     known.map(a=>a.reason||a.text).join("; "),anchors};
