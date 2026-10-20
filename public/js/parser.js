@@ -46,6 +46,18 @@ function finalize(calls) {
   const seen = new Set();
 
   return calls.map((c, i) => {
+    // When a transcript already names the customer, a single other
+    // speaker label is unambiguously the agent. No browser prompt.
+    const knownCustomer = (c.turns || []).some(t => t.speaker === "customer");
+    const unknownLabels = [...new Set((c.turns || [])
+      .filter(t => t.speaker === "unknown").map(t => t.label))];
+    const inferredAgent = knownCustomer && unknownLabels.length === 1
+      ? unknownLabels[0] : null;
+    if (inferredAgent) {
+      c = { ...c, agent: inferredAgent,
+        turns: c.turns.map(t => t.speaker === "unknown" && t.label === inferredAgent
+          ? { ...t, speaker: "agent" } : t) };
+    }
     const id = tidy(c.id);
 
     const turns = (c.turns || [])
