@@ -913,6 +913,23 @@ export function agentsView(state) {
 
 /** Inline editor for the selected rubric criterion; preserves existing save IDs. */
 function renderCriterionEditor(c) {
+  if (c.mode === "timing") {
+    return `
+      <div class="qa-inline-editor">
+        <div class="qa-inline-heading">
+          <strong>${esc(c.name)}</strong>
+          <span class="tag">Linked deterministic rule</span>
+        </div>
+        <p class="muted">The greeting threshold, enable switch and evidence requirements are configured in the Deterministic Rules Engine below. This criterion remains in the QA rubric so its scoring weight can be managed independently.</p>
+        <label>Scoring weight</label>
+        <input id="cWeight" type="number" min="0" max="100" value="${c.weight}">
+        <input type="hidden" id="cName" value="${esc(c.name)}">
+        <textarea id="cDefinition" hidden>${esc(c.definition)}</textarea>
+        <textarea id="cInstruction" hidden>${esc(c.instructions)}</textarea>
+        <button class="primary" id="saveCriterion">Save scoring weight</button>
+        <span class="save-status" id="saved"></span>
+      </div>`;
+  }
   return `
         <div class="qa-inline-editor">
           <div class="panel-heading">
