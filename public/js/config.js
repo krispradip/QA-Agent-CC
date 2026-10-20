@@ -241,7 +241,8 @@ const checkpoints = {
   opening: [
     "Identifies SHARE or the service appropriately",
     "Introduces the agent or provides a professional identity",
-    "Invites the customer to explain the reason for contact"
+    "Invites the customer to explain the reason for contact",
+    "Uses a professional, courteous greeting rather than slang or dismissive language; assess wording independently of greeting timing"
   ],
 
   impact: [
