@@ -682,6 +682,24 @@ root.addEventListener("click", event => {
       );
     }
 
+    // Persist nested quantitative rules with the same rubric revision.
+    const editedRules = [...root.querySelectorAll("[data-rule-value]")].map(input => ({
+      id: input.dataset.ruleValue,
+      enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+      value: input.value.trim() === "" ? NaN : Number(input.value)
+    }));
+    if (editedRules.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
+      notify("Rule thresholds must be valid non-negative numbers.", true);
+      return;
+    }
+    const currentRules = state.rubric.rules.deterministic || [];
+    state.rubric.rules.deterministic = currentRules.map(rule =>
+      editedRules.find(x => x.id === rule.id) || rule
+    );
+    const greeting = state.rubric.rules.deterministic.find(x => x.id === "greeting_time");
+    const fallback = state.rubric.rules.deterministic.find(x => x.id === "fallback_greeting");
+    if (greeting) state.rubric.rules.greet7 = greeting.value;
+    if (fallback) state.rubric.rules.greet10 = fallback.value;
     Object.assign(c, {
       name,
       definition,
