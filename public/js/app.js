@@ -42,6 +42,7 @@ const state = {
   calls: [],
   selected: null,
   agentFilter: "",
+  overviewAgent: "",
   search: "",
 
   rubric: loadRubric(),
@@ -99,7 +100,7 @@ function render() {
 
   root.innerHTML =
     state.page === "overview"
-      ? overview(state.calls, state.rubric)
+      ? overview(state.calls, state.rubric, state.overviewAgent)
 
       : state.page === "studio"
         ? studio(state)
@@ -208,6 +209,7 @@ function load(text, filename) {
     state.calls[0].key;
 
   state.agentFilter = "";
+  state.overviewAgent = "";
   state.search = "";
   state.phase = "idle";
 
@@ -507,6 +509,12 @@ root.addEventListener("click", event => {
     return;
   }
 
+  if (button.dataset.dashboardAgent !== undefined) {
+    state.overviewAgent = button.dataset.dashboardAgent;
+    render();
+    return;
+  }
+
   if (button.dataset.agent !== undefined) {
     state.agentFilter = button.dataset.agent;
     navigate("agents");
@@ -754,6 +762,12 @@ root.addEventListener(
         notify(err.message, true);
       }
 
+      return;
+    }
+
+    if (target.id === "overview-agent-filter") {
+      state.overviewAgent = target.value;
+      render();
       return;
     }
 
