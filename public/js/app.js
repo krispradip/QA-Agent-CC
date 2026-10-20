@@ -196,29 +196,9 @@ function load(text, filename) {
   }
   state.calls = merged.calls;
 
-  for (const call of state.calls) {
-    if (
-      call.status === "NEEDS_MAPPING" &&
-      call.labels.length
-    ) {
-      const wanted = prompt(
-        `Speaker labels in ${call.id}:\n` +
-        call.labels.join("\n") +
-        "\n\nType the exact AGENT speaker label " +
-        "to map the roles. " +
-        "Cancel leaves this call unassessed.",
-
-        call.labels[0]
-      );
-
-      if (
-        wanted &&
-        call.labels.includes(wanted)
-      ) {
-        mapSpeakers(call, wanted);
-      }
-    }
-  }
+  // Transcript import never interrupts the user with a browser prompt.
+  // Clearly labelled speakers are resolved automatically by the parser.
+  // Truly ambiguous roles remain flagged instead of being guessed.
 
   state.page = "studio";
 
