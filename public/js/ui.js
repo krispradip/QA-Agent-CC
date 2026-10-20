@@ -361,9 +361,9 @@ export function studio(state) {
                 Or paste a speaker-labelled transcript
               </summary>
 
-              <textarea id="paste" rows="4"
+              <textarea id="paste" rows="6"
                 placeholder="Agent: Hello, welcome to SHARE.
-Customer: I need help with points."></textarea>
+Customer: I need help with points.">${esc(state.pasteDraft || "")}</textarea>
 
               <button class="secondary"
                 id="pasteLoad">
