@@ -94,4 +94,28 @@ test("real app controller handles paste and shows an enabled Evaluate selected b
   element("#paste").value = "Agent: Hello, welcome to SHARE.\nCustomer: Hi, I need help.";
   click({ id: "pasteLoad" });
   assert.match(root.innerHTML, /1 existing/);
+
+  // Run a fully synthetic Gemini response, then repeat the same import.
+  globalThis.fetch = async (url, opts) => {
+    assert.equal(url, "/api/evaluate");
+    const request = JSON.parse(opts.body);
+    return new Response(JSON.stringify({
+      findings: request.criteria.map(c => ({
+        id: c.id, reason: "Test-only synthetic observation",
+        anchors: c.checkpoints.map(a => ({
+          id: a.id, state: "MET", evidence: [{
+            line: 1, quote: "Hello, welcome to SHARE."
+          }]
+        }))
+      }))
+    }), {status: 200, headers: {"content-type":"application/json"}});
+  };
+  click({ id: "one" });
+  await new Promise(resolve => setTimeout(resolve, 30));
+  assert.match(root.innerHTML, /Re-evaluate selected/);
+  assert.match(root.innerHTML, /COMPLETE/);
+  element("#paste").value = "Agent: Hello, welcome to SHARE.\nCustomer: Hi, I need help.";
+  click({ id: "pasteLoad" });
+  assert.match(root.innerHTML, /Re-evaluate selected/);
+  assert.match(root.innerHTML, /1 existing/);
 });
