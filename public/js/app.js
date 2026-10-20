@@ -12,7 +12,8 @@
 
 import {
   loadRubric,
-  saveRubric
+  saveRubric,
+  linkedRules
 } from "./config.js";
 
 import {
@@ -831,6 +832,16 @@ root.addEventListener(
 
       if (c) {
         c.enabled = target.checked;
+        // Parent criterion is the master activation control. Preserve each
+        // subordinate rule's saved selection when the parent is disabled.
+        if (target.checked) {
+          const ids = linkedRules(c.id);
+          const rules = state.rubric.rules.deterministic || [];
+          if (ids.length && !rules.some(r => ids.includes(r.id) && r.enabled)) {
+            const first = rules.find(r => ids.includes(r.id));
+            if (first) first.enabled = true;
+          }
+        }
 
         save(
           "Parameter enable/disable saved."
