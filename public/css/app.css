@@ -1359,3 +1359,13 @@ footer {
 .qa-inline-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;color:#205c57}
 .qa-inline-editor input:not([type=checkbox]),.qa-inline-editor textarea{max-width:100%;box-sizing:border-box}
 @media(max-width:720px){.qa-inline-editor{padding:12px;margin:8px 0 12px}.qa-inline-heading{flex-wrap:wrap}}
+
+/* QA-DETERMINISTIC-LIBRARY | Configurable thresholds */
+.qa-rule-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0}
+.qa-rule-item{border:1px solid #dbe8e7;background:#fbfdfc;border-radius:12px;padding:13px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.qa-rule-toggle{display:flex;align-items:center;gap:9px;margin:0!important;min-width:0;font-size:12px;color:#264650}
+.qa-rule-toggle input{width:18px;min-width:18px;height:18px}
+.qa-rule-number{display:flex;align-items:center;gap:6px}.qa-rule-number input{width:85px;min-width:65px;box-sizing:border-box;padding:8px}.qa-rule-number span{font-size:11px;color:#71858d}
+.qa-rule-item small{grid-column:1/-1;color:#758d91;line-height:1.45}
+@media(max-width:1050px){.qa-rule-list{grid-template-columns:1fr}}
+@media(max-width:450px){.qa-rule-item{grid-template-columns:1fr}.qa-rule-number input{width:120px}}
