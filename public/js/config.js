@@ -1,4 +1,38 @@
 /**
+ * QA-DETERMINISTIC-CATALOG | Business-configurable rule thresholds.
+ * A configured rule is not necessarily executable from a transcript.
+ * Only the existing greeting timing engine is connected today.
+ */
+export const DETERMINISTIC_RULES = [
+  ["greeting_time","Greeting time","seconds",7,"transcript","First greeting after call start",true],
+  ["fallback_greeting","Fallback greeting time","seconds",10,"transcript","Alternative greeting threshold",false],
+  ["hold_single","Maximum single hold","seconds",120,"genesys","Hold event timestamps",false],
+  ["hold_total","Maximum total hold","seconds",180,"genesys","All hold event timestamps",false],
+  ["silence","Maximum continuous silence","seconds",15,"audio","Audio/silence events",false],
+  ["transfer_count","Maximum transfers","count",1,"genesys","Transfer event records",false],
+  ["transfer_notice","Transfer notice lead time","seconds",0,"combined","Transcript plus transfer event",false],
+  ["queue_wait","Maximum queue wait","seconds",60,"genesys","Queue and answer events",false],
+  ["after_call_work","Maximum after-call work","seconds",120,"genesys","Wrap-up timestamps",false],
+  ["interaction_duration","Maximum interaction duration","seconds",900,"genesys","Start and end timestamps",false],
+  ["mandatory_greeting","Minimum greeting phrase matches","count",1,"transcript","Approved phrase list",false],
+  ["mandatory_disclosure","Minimum disclosure phrase matches","count",1,"transcript","Approved disclosure phrases",false],
+  ["prohibited_phrase","Maximum prohibited phrase matches","count",0,"transcript","Prohibited phrase list",false],
+  ["closing_statement","Minimum closing phrase matches","count",1,"transcript","Approved closing phrases",false],
+  ["verification_steps","Minimum verification steps","count",2,"combined","Transcript and verified CRM events",false],
+  ["ticket_creation","Required ticket creation events","count",1,"crm","CRM ticket creation event",false],
+  ["disposition_match","Required disposition matches","count",1,"combined","Genesys/CRM disposition and mapped code",false],
+  ["callback_sla","Maximum callback completion time","hours",24,"combined","Callback creation/completion timestamps",false],
+  ["escalation_sla","Maximum escalation time","minutes",30,"crm","Workflow escalation timestamps",false],
+  ["repeat_contact","Repeat-contact lookback","days",7,"history","Customer interaction history",false],
+  ["first_contact_resolution","FCR observation window","days",7,"history","Customer interaction history and resolution rules",false],
+  ["recording_compliance","Minimum recording events","count",1,"genesys","Recording metadata",false],
+  ["channel_sla","Maximum channel response time","seconds",60,"genesys","Channel and response timestamps",false]
+].map(([id,name,unit,value,source,description,active])=>({
+  id,name,unit,value,source,description,enabled:active,
+  connected:id==="greeting_time"||id==="fallback_greeting"
+}));
+
+/**
  * QA-CFG-001 — Qualis v2.2.0
  *
  * Canonical SHARE QA rubric.
@@ -264,6 +298,7 @@ export function defaultRubric() {
       "Do not assume CRM actions or unknown policy.",
 
     rules: {
+      deterministic: DETERMINISTIC_RULES.map(r => ({ id:r.id, enabled:r.enabled, value:r.value })),
       greet7: 7,
       greet10: 10,
 
@@ -345,7 +380,13 @@ export function loadRubric() {
 
       rules: {
         ...fresh.rules,
-        ...saved.rules
+        ...saved.rules,
+        deterministic: DETERMINISTIC_RULES.map(def => {
+          const savedRule = Array.isArray(saved.rules?.deterministic)
+            ? saved.rules.deterministic.find(x => x.id === def.id) : null;
+          return { id:def.id, enabled:typeof savedRule?.enabled === "boolean" ? savedRule.enabled : def.enabled,
+            value:Number.isFinite(savedRule?.value) && savedRule.value >= 0 ? savedRule.value : def.value };
+        })
       },
 
       criteria: fresh.criteria.map(c => {
