@@ -1,11 +1,13 @@
 {
-  "name": "qaai",
-  "main": "./src/worker.js",
-  "compatibility_date": "2026-10-19",
-  "workers_dev": true,
-  "assets": {
-    "directory": "./public",
-    "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+  "name": "qualis-ai-prototype",
+  "version": "2.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
   }
 }
