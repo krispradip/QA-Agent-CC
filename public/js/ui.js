@@ -213,7 +213,7 @@ export function overview(calls, rubric, selectedAgent = "", period = { mode:"all
             <span>!</span>
             <div>
               <b>
-                ${esc(x.name)} · ${x.score}%
+                ${esc(criterionLabel(x,rubric))} · ${x.score}%
               </b>
               <small>
                 ${esc(x.agent)} —
@@ -665,7 +665,7 @@ export function callDetail(call, rubric) {
     </div>
 
     ${renderScoreExplanation(call)}
-    ${(() => { const x = coverageBreakdown(call, { criteria: call.meta?.criteria?.map(c => ({ ...c, mode: rubric.criteria.find(r => r.id === c.id)?.mode, enabled: true })) || rubric.criteria }); if (!x) return ""; return `<details class="qa-call-explainer" open><summary><strong>Why was coverage limited?</strong><span>Evidence gaps and requirements</span></summary>${x.groups.map(g=>`<div class="qa-coverage-reason"><b>${esc(g.title)} — ${g.percentOfApplicable}% of applicable rubric weight</b>${g.criteria.map(c=>`<p><strong>${esc(c.name)}</strong>: ${esc(c.reason)}</p>`).join("")}</div>`).join("") || "<p>No unverified criteria in this rubric.</p>"}<p class="muted">${x.notApplicable} criteria marked Not Applicable and excluded.</p></details>`; })()}
+    ${(() => { const x = coverageBreakdown(call, { criteria: call.meta?.criteria?.map(c => ({ ...c, mode: rubric.criteria.find(r => r.id === c.id)?.mode, enabled: true })) || rubric.criteria }); if (!x) return ""; return `<details class="qa-call-explainer" open><summary><strong>Why was coverage limited?</strong><span>Evidence gaps and requirements</span></summary>${x.groups.map(g=>`<div class="qa-coverage-reason"><b>${esc(g.title)} — ${g.percentOfApplicable}% of applicable rubric weight</b>${g.criteria.map(c=>`<p><strong>${esc(criterionLabel(c,rubric))}</strong>: ${esc(c.reason)}</p>`).join("")}</div>`).join("") || "<p>No unverified criteria in this rubric.</p>"}<p class="muted">${x.notApplicable} criteria marked Not Applicable and excluded.</p></details>`; })()}
 
     ${call.error ? `
       <div class="error-note">
@@ -912,6 +912,12 @@ export function agentsView(state) {
  */
 
 /** Inline editor for the selected rubric criterion; preserves existing save IDs. */
+function criterionLabel(c,rubric) {
+  const id = c.id === "greet7" ? "greeting_time" : c.id === "greet10" ? "fallback_greeting" : null;
+  if (!id) return c.name;
+  const threshold = rubric.rules.deterministic?.find(r=>r.id===id)?.value;
+  return Number.isFinite(threshold) ? "Greeting within " + threshold + " seconds" + (c.id==="greet10"?" (fallback)":"") : c.name;
+}
 function renderCriterionEditor(c, rubric) {
   const ids = linkedRules(c.id);
   const rulesMarkup = ids.length ? `
