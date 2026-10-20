@@ -1353,3 +1353,9 @@ footer {
 .qa-call-explainer-footer { margin:12px 0 0;padding-top:8px;border-top:1px solid #dceee8;color:#69878a;font-size:11px; }
 @media (max-width:1130px) { .qa-agent-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .qa-score-guide { grid-template-columns:1fr; } }
 @media (max-width:720px) { .qa-dashboard-heading { align-items:stretch;flex-direction:column; } .qa-filter-label { width:100%; } .qa-agent-grid,.qa-call-explainer-grid { grid-template-columns:1fr; } .qa-call-explainer summary { align-items:flex-start; } }
+
+/* QA-CONFIG-INLINE: selected rubric criterion editor */
+.qa-inline-editor{margin:8px 0 16px;padding:18px;border:1px solid #cfe5df;border-radius:12px;background:#f8fcfb;min-width:0}
+.qa-inline-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;color:#205c57}
+.qa-inline-editor input:not([type=checkbox]),.qa-inline-editor textarea{max-width:100%;box-sizing:border-box}
+@media(max-width:720px){.qa-inline-editor{padding:12px;margin:8px 0 12px}.qa-inline-heading{flex-wrap:wrap}}
