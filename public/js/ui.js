@@ -1011,8 +1011,8 @@ export function configuration(rubric, selected) {
                     aria-label="Enable ${esc(x.name)}">
 
                   <button
-                    data-criterion="${esc(x.id)}">
-                    ${esc(x.name)}
+                    data-criterion="${esc(x.id)}" aria-expanded="${x.id === c.id}">
+                    ${esc(criterionLabel(x,rubric))} <span class="qa-expand-indicator">${x.id === c.id ? "−" : "+"}</span>
                   </button>
                 </div>
                 ${x.id === c.id ? renderCriterionEditor(c, rubric) : ""}
