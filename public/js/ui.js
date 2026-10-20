@@ -910,79 +910,15 @@ export function agentsView(state) {
  * QA-UI-CONFIG
  * Editable 7-category, 27-parameter QA rubric.
  */
-export function configuration(rubric, selected) {
-  const c =
-    rubric.criteria.find(x =>
-      x.id === selected
-    ) || rubric.criteria[0];
 
+/** Inline editor for the selected rubric criterion; preserves existing save IDs. */
+function renderCriterionEditor(c) {
   return `
-    <div class="configuration">
-      <section class="panel index">
-        <div class="panel-heading">
-          <div>
-            <span class="kicker">
-              QA GOVERNANCE
-            </span>
-
-            <h3>SHARE 27-parameter rubric</h3>
-          </div>
-
-          <span class="tag">
-            REV. ${rubric.revision}
-          </span>
-        </div>
-
-        <p class="muted">
-          All criteria are editable.
-          Settings apply to subsequent evaluations
-          without modifying JavaScript.
-        </p>
-
-        ${GROUPS.map(group => `
-          <div class="group">
-            <h4>
-              ${esc(group)}
-
-              <span>
-                ${
-                  rubric.criteria.filter(
-                    x => x.group === group
-                  ).length
-                }
-              </span>
-            </h4>
-
-            ${rubric.criteria
-              .filter(x =>
-                x.group === group
-              )
-              .map(x => `
-                <div class="rubric-row ${
-                  x.id === c.id ? "on" : ""
-                }">
-                  <input
-                    type="checkbox"
-                    data-enabled="${esc(x.id)}"
-                    ${x.enabled ? "checked" : ""}
-                    aria-label="Enable ${esc(x.name)}">
-
-                  <button
-                    data-criterion="${esc(x.id)}">
-                    ${esc(x.name)}
-                  </button>
-                </div>
-              `).join("")}
-          </div>
-        `).join("")}
-      </section>
-
-      <div>
-        <section class="panel">
+        <div class="qa-inline-editor">
           <div class="panel-heading">
             <div>
               <span class="kicker">
-                PARAMETER EDITOR
+                EDIT SELECTED PARAMETER
               </span>
 
               <h3>${esc(c.name)}</h3>
@@ -1072,8 +1008,79 @@ export function configuration(rubric, selected) {
 
           <span class="save-status"
             id="saved"></span>
-        </section>
+        </div>
+  `;
+}
 
+export function configuration(rubric, selected) {
+  const c =
+    rubric.criteria.find(x =>
+      x.id === selected
+    ) || rubric.criteria[0];
+
+  return `
+    <div class="configuration">
+      <section class="panel index">
+        <div class="panel-heading">
+          <div>
+            <span class="kicker">
+              QA GOVERNANCE
+            </span>
+
+            <h3>SHARE 27-parameter rubric</h3>
+          </div>
+
+          <span class="tag">
+            REV. ${rubric.revision}
+          </span>
+        </div>
+
+        <p class="muted">
+          All criteria are editable.
+          Settings apply to subsequent evaluations
+          without modifying JavaScript.
+        </p>
+
+        ${GROUPS.map(group => `
+          <div class="group">
+            <h4>
+              ${esc(group)}
+
+              <span>
+                ${
+                  rubric.criteria.filter(
+                    x => x.group === group
+                  ).length
+                }
+              </span>
+            </h4>
+
+            ${rubric.criteria
+              .filter(x =>
+                x.group === group
+              )
+              .map(x => `
+                <div class="rubric-row ${
+                  x.id === c.id ? "on" : ""
+                }">
+                  <input
+                    type="checkbox"
+                    data-enabled="${esc(x.id)}"
+                    ${x.enabled ? "checked" : ""}
+                    aria-label="Enable ${esc(x.name)}">
+
+                  <button
+                    data-criterion="${esc(x.id)}">
+                    ${esc(x.name)}
+                  </button>
+                </div>
+                ${x.id === c.id ? renderCriterionEditor(c) : ""}
+              `).join("")}
+          </div>
+        `).join("")}
+      </section>
+
+      <div>
         <section class="panel">
           <div class="panel-heading">
             <div>
