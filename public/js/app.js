@@ -701,39 +701,29 @@ root.addEventListener("click", event => {
    * Save deterministic rules.
    */
   if (button.id === "saveRules") {
-    const x = Number(
-      $("#rGreet7").value
-    );
-
-    const y = Number(
-      $("#rGreet10").value
-    );
-
-    if (
-      !Number.isInteger(x) ||
-      !Number.isInteger(y) ||
-      x < 0 ||
-      x > 60 ||
-      y < x ||
-      y > 60
-    ) {
-      notify(
-        "Invalid greeting timing thresholds.",
-        true
-      );
+    const entries = [...root.querySelectorAll("[data-rule-value]")];
+    const deterministic = entries.map(input => ({
+      id: input.dataset.ruleValue,
+      value: input.value.trim() === "" ? NaN : Number(input.value),
+      enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked
+    }));
+    if (deterministic.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
+      notify("Enter a valid non-negative numeric threshold for every rule.", true);
       return;
     }
-
-    state.rubric.rules.greet7 = x;
-    state.rubric.rules.greet10 = y;
-
-    state.rubric.rules.greetingTerms =
-      $("#rTerms").value
-        .split(/\r?\n/)
-        .map(x => x.trim())
-        .filter(Boolean);
-
-    save("Rules saved.");
+    const first = deterministic.find(x => x.id === "greeting_time");
+    const fallback = deterministic.find(x => x.id === "fallback_greeting");
+    if (!Number.isInteger(first.value) || !Number.isInteger(fallback.value) ||
+        first.value > 60 || fallback.value > 60 || fallback.value < first.value) {
+      notify("Greeting thresholds must be whole seconds between 0 and 60; fallback cannot be shorter.", true);
+      return;
+    }
+    state.rubric.rules.deterministic = deterministic;
+    state.rubric.rules.greet7 = first.value;
+    state.rubric.rules.greet10 = fallback.value;
+    state.rubric.rules.greetingTerms = $("#rTerms").value
+      .split(/\\r?\\n/).map(x => x.trim()).filter(Boolean);
+    save("Deterministic rules saved. Only connected rules are executed; pending rules do not change scoring.");
     return;
   }
 
