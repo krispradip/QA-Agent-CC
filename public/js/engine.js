@@ -171,8 +171,8 @@ function executeRule(call,def,rule,rules) {
   evidence:[{line:0,quote:"Verified interaction evidence: "+spec[0]+" = "+value}]};
 }
 function combineCriterion(criterion,ai,checks){
-  if(!checks.length && criterion.mode!=="ai")return ai;
-  const anchors=[...(criterion.mode==="ai"?(ai?.anchors||[]):[]),...checks];
+  if(!checks.length && !criterion.checkpoints?.some(a=>a.enabled!==false))return ai;
+  const anchors=[...(criterion.checkpoints?.some(a=>a.enabled!==false)?(ai?.anchors||[]):[]),...checks];
   const applicable=anchors.filter(a=>a.state!=="NA");
   const known=applicable.filter(a=>a.state==="MET"||a.state==="MISSED");
   const missing=applicable.filter(a=>a.state==="UNKNOWN");
@@ -204,7 +204,7 @@ export function calculateCriterion(
   criterion,
   reported
 ) {
-  if (criterion.mode !== "ai") {
+  if (!criterion.checkpoints?.some(a=>a.enabled!==false)) {
     return reported;
   }
 
@@ -386,9 +386,7 @@ export async function assess(
 ) {
   call.status = "RUNNING";
 
-  const enabled = rubric.criteria.filter(
-    c => c.enabled
-  );
+  const enabled = rubric.criteria.filter(c => c.enabled);
 
   const ruleMap = new Map((rubric.rules.deterministic || []).map(r=>[r.id,r]));
   const checksById = new Map(enabled.map(c=>[c.id,
@@ -399,8 +397,7 @@ export async function assess(
     }).filter(Boolean)
   ]));
   const local = new Map(enabled.map(c=>[c.id,
-    combineCriterion(c, c.mode==="timing" ?
-      empty(c,"No active timing rule") : localFinding(call,c,rubric.rules), checksById.get(c.id))
+    combineCriterion(c, empty(c,"Awaiting configured qualitative evaluation"), checksById.get(c.id))
   ]));
 
   call.findings = enabled.map(
@@ -414,7 +411,7 @@ export async function assess(
 
   onStage("rules", call);
 
-  const ai = enabled.filter(c => c.mode === "ai" && c.checkpoints.some(a=>a.enabled!==false));
+  const ai = enabled.filter(c => c.checkpoints?.some(a=>a.enabled!==false));
 
   if (ai.length) {
     onStage("ai", call);
@@ -444,7 +441,9 @@ export async function assess(
           turns: call.turns.map(t => ({
             line: t.line,
             speaker: t.speaker,
-            text: redact(t.text)
+            text: redact(t.text),
+            timestamp: t.timestamp || "",
+            seconds: Number.isFinite(t.seconds) ? t.seconds : null
           }))
         })
       }
@@ -473,7 +472,7 @@ export async function assess(
     );
 
     call.findings = enabled.map(c =>
-      c.mode === "ai"
+      c.checkpoints?.some(a=>a.enabled!==false)
         ? combineCriterion(c, calculateCriterion(c,returned.get(c.id)), checksById.get(c.id))
         : local.get(c.id)
     );
