@@ -24,6 +24,8 @@ import {
 import {
   assess
 } from "./engine.js";
+import { loadHistory, saveHistory, mergeImported, clearHistory } from "./history.js";
+import { applyPeriod } from "./reporting.js";
 
 import {
   overview,
@@ -42,6 +44,8 @@ const state = {
   calls: [],
   selected: null,
   agentFilter: "",
+  overviewAgent: "",
+  period: { mode: "all", from: "", to: "" },
   search: "",
 
   rubric: loadRubric(),
@@ -99,7 +103,7 @@ function render() {
 
   root.innerHTML =
     state.page === "overview"
-      ? overview(state.calls, state.rubric)
+      ? overview(applyPeriod(state.calls, state.period).calls, state.rubric, state.overviewAgent, state.period, applyPeriod(state.calls, state.period))
 
       : state.page === "studio"
         ? studio(state)
@@ -119,6 +123,11 @@ function render() {
  * QA-APP-NOTICE
  * Display non-blocking status and errors.
  */
+async function persist() {
+  try { await saveHistory(state.calls.filter(c => c.status !== "RUNNING")); }
+  catch(e) { notify("History could not be saved: " + e.message, true); }
+}
+
 function notify(message, error = false) {
   const el = $("#notice");
 
@@ -170,10 +179,9 @@ function filterRows() {
 function load(text, filename) {
   if (state.running) return;
 
-  state.calls = parseExport(
-    text,
-    filename
-  );
+  const merged = mergeImported(state.calls, parseExport(text, filename));
+  state.calls = merged.calls;
+  void persist();
 
   for (const call of state.calls) {
     if (
@@ -208,6 +216,7 @@ function load(text, filename) {
     state.calls[0].key;
 
   state.agentFilter = "";
+  state.overviewAgent = "";
   state.search = "";
   state.phase = "idle";
 
@@ -215,9 +224,7 @@ function load(text, filename) {
     c => c.status === "READY"
   ).length;
 
-  state.message =
-    `${state.calls.length} records identified · ` +
-    `${ready} ready`;
+  state.message = `${merged.added} new · ${merged.alreadyKnown} already known · ${merged.skipped} duplicate rows · ${ready} ready`;
 
   notify(
     "Export parsed. Click Evaluate selected " +
@@ -352,6 +359,7 @@ async function run(all) {
         }
       }
 
+      await persist();
       render();
     }
 
@@ -504,6 +512,18 @@ root.addEventListener("click", event => {
 
   if (button.dataset.pageGo) {
     navigate(button.dataset.pageGo);
+    return;
+  }
+
+  if (button.id === "clearHistory") {
+    if (state.running || !confirm("Permanently delete saved Qualis interaction history from this browser?")) return;
+    void clearHistory().then(() => { state.calls = []; state.selected = null; render(); notify("Saved history cleared."); }).catch(e => notify(e.message, true));
+    return;
+  }
+
+  if (button.dataset.dashboardAgent !== undefined) {
+    state.overviewAgent = button.dataset.dashboardAgent;
+    render();
     return;
   }
 
@@ -757,6 +777,16 @@ root.addEventListener(
       return;
     }
 
+    if (target.id === "report-period") { state.period.mode = target.value; render(); return; }
+    if (target.id === "period-from" || target.id === "period-to") {
+      state.period[target.id === "period-from" ? "from" : "to"] = target.value; render(); return;
+    }
+    if (target.id === "overview-agent-filter") {
+      state.overviewAgent = target.value;
+      render();
+      return;
+    }
+
     if (target.id === "filter") {
       state.agentFilter = target.value;
       filterRows();
@@ -790,3 +820,10 @@ root.addEventListener("input", event => {
 });
 
 render();
+
+// Load browser-local results after refresh.
+void loadHistory().then(calls => {
+  state.calls = calls.map(c => c.status === "RUNNING" ? { ...c, status: "READY" } : c);
+  state.selected = state.calls[0]?.key || null;
+  render();
+}).catch(e => notify("Local history unavailable: " + e.message, true));
