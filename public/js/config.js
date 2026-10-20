@@ -468,11 +468,10 @@ export function loadRubric() {
           mode: c.mode,
 
           checkpoints:
-            Array.isArray(old.checkpoints) &&
-            Array.isArray(old.checkpoints) &&
-            old.checkpoints.length >= 1
-              ? old.checkpoints.map(a => ({ ...a, enabled: a.enabled !== false }))
-              : c.checkpoints
+            c.checkpoints.map(a => {
+              const savedCheck = Array.isArray(old.checkpoints) ? old.checkpoints.find(x => x.id === a.id) : null;
+              return savedCheck ? { ...a, ...savedCheck, enabled: savedCheck.enabled !== false } : a;
+            })
         };
       })
     };
