@@ -1024,7 +1024,7 @@ export function configuration(rubric, selected) {
         `).join("")}
       </section>
 
-      <div>
+      <div class="qa-evaluator-section">
         <section class="panel">
           <div class="panel-heading">
             <div>
@@ -1077,10 +1077,7 @@ export function configuration(rubric, selected) {
             using scores for formal decisions.
           </p>
 
-          <button class="secondary"
-            id="saveModel">
-            Save AI configuration
-          </button>
+
         </section>
       </div>
     </div>
