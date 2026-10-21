@@ -124,6 +124,7 @@ function render() {
             );
 
   filterRows();
+  if (state.page === "studio") paintProgress();
   if (preserveScroll) {
     const panel = root.querySelector(".configuration .index");
     if (panel) panel.scrollTop = previousPanelY;
@@ -285,6 +286,23 @@ function stage(phase, call) {
  *
  * Quota errors stop subsequent requests.
  */
+// QA-PROGRESS-ETA | Real elapsed wall time and completed-call average.
+// Do not fabricate percentage completion for an in-flight Gemini request.
+let progressClock = null;
+function paintProgress() {
+  const p = state.evalProgress;
+  const elapsed = root.querySelector("#qa-elapsed");
+  const eta = root.querySelector("#qa-eta");
+  const count = root.querySelector("#qa-batch-count");
+  if (!p || !elapsed || !eta || !count) return;
+  const seconds = Math.max(0,Math.floor((Date.now()-p.started)/1000));
+  const format = n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
+  elapsed.textContent = format(seconds);
+  count.textContent = p.completed+" / "+p.total+" processed";
+  eta.textContent = p.completed>0 && p.completed<p.total
+    ? "~"+format(Math.ceil(seconds/p.completed*(p.total-p.completed)))
+    : p.completed===p.total ? "00:00" : "Calculating…";
+}
 async function run(all) {
   if (state.running) return;
 
@@ -312,6 +330,9 @@ async function run(all) {
   const snapshot = clone(state.rubric);
 
   state.running = true;
+  state.evalProgress = {started:Date.now(),total:target.length,completed:0};
+  if (progressClock) clearInterval(progressClock);
+  progressClock = setInterval(paintProgress,1000);
   state.controller = new AbortController();
 
   let quota = false;
@@ -369,11 +390,15 @@ async function run(all) {
         }
       }
 
+      state.evalProgress.completed++;
       await persist();
       render();
+      paintProgress();
     }
 
   } finally {
+    if (progressClock) clearInterval(progressClock);
+    progressClock = null;
     state.running = false;
     state.controller = null;
 
@@ -388,6 +413,7 @@ async function run(all) {
         : "Evaluation cycle finished — inspect results";
 
     render();
+    paintProgress();
   }
 }
 
