@@ -837,6 +837,13 @@ root.addEventListener(
         row?.classList.toggle("qa-child-active-parent",!c.enabled&&(activeChildren+activeRules)>0);
         const badge = row?.querySelector(".qa-child-active-badge");
         if (badge) badge.hidden = c.enabled;
+        else if (!c.enabled && activeChildren + activeRules > 0) {
+          const button = row?.querySelector("[data-criterion]");
+          const expand = button?.querySelector(".qa-expand-indicator");
+          expand?.insertAdjacentHTML("beforebegin",
+            '<span class="qa-child-active-badge" title="Parent unchecked; selected child checks still run">' +
+            (activeChildren + activeRules) + ' active children</span> ');
+        }
       }
     }
   }
