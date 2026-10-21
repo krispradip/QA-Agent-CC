@@ -131,7 +131,7 @@ function executeRule(call,def,rule,rules) {
    (rules.greetingTerms||[]).some(term=>term&&t.text.toLowerCase().includes(term.toLowerCase())));
   if(!first||typeof first.seconds!=="number"||!Number.isFinite(first.seconds))
    return unknown("Timestamped greeting is not available");
-  return {id,text:def.name,state:first.seconds<=limit?"MET":"MISSED",
+  return {id,text:def.name,method:"quantitative",state:first.seconds<=limit?"MET":"MISSED",
    reason:"Greeting at "+first.seconds+"s; threshold "+limit+"s",
    evidence:[{line:first.line,quote:first.text}]};
  }
@@ -166,7 +166,7 @@ function executeRule(call,def,rule,rules) {
  if(typeof value!=="number"||!Number.isFinite(value)||value<0)
   return unknown("Invalid "+spec[0]+" evidence");
  const met=minimum.has(id)?value>=limit:value<=limit;
- return {id,text:def.name,state:met?"MET":"MISSED",
+ return {id,text:def.name,method:"quantitative",state:met?"MET":"MISSED",
   reason:"Observed "+value+"; threshold "+limit,
   evidence:[{line:0,quote:"Verified interaction evidence: "+spec[0]+" = "+value}]};
 }
@@ -229,6 +229,8 @@ export function calculateCriterion(
     return {
       ...a,
       method:"qualitative",
+      validation:b.validation || null,
+      reason:b.validation?.status==="UNVERIFIED" ? b.validation.reason : undefined,
 
       state:
         ["MET", "MISSED"].includes(state) &&
