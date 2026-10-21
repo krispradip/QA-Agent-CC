@@ -784,6 +784,11 @@ export function callDetail(call, rubric) {
                       <span class="qa-method-tag ${a.method==="quantitative"?"qa-method-rule":"qa-method-ai"}">${a.method==="quantitative"?"Quantitative · Rule":"Qualitative · Model"}</span> ${esc(a.text)}
                     </div>
 
+                    ${a.validation?.status==="UNVERIFIED" ? `
+                      <p class="qa-validation-warning"><strong>Evidence unverified</strong> · Original: ${esc(a.validation.originalState)} · Final: UNKNOWN. ${esc(a.validation.reason)}</p>
+                    ` : a.validation?.status==="VERIFIED" ? `
+                      <span class="qa-validation-ok">Evidence verified</span>
+                    ` : ""}
                     ${(a.evidence || []).map(e => `
                       <blockquote dir="auto">
                         <b>Line ${Number(e.line)}</b>
