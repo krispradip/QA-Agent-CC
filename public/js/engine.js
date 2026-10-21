@@ -123,7 +123,7 @@ const minimum = new Set(["mandatory_greeting","mandatory_disclosure","closing_st
  "verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"]);
 function executeRule(call,def,rule,rules) {
  const id=def.id,limit=Number(rule.value);
- const unknown=reason=>({id,text:def.name,state:"UNKNOWN",reason,evidence:[]});
+ const unknown=reason=>({id,text:def.name,method:"quantitative",state:"UNKNOWN",reason,evidence:[]});
  if(!Number.isFinite(limit)||limit<0)return unknown("Invalid rule threshold");
  const turns=call.turns||[];
  if(id==="greeting_time"||id==="fallback_greeting"){
@@ -143,7 +143,7 @@ function executeRule(call,def,rule,rules) {
   const matches=turns.filter(t=>t.speaker==="agent"&&terms.some(term=>
    term&&t.text.toLowerCase().includes(String(term).toLowerCase())));
   const met=id==="prohibited_phrase"?matches.length<=limit:matches.length>=limit;
-  return {id,text:def.name,state:met?"MET":"MISSED",
+  return {id,text:def.name,method:"quantitative",state:met?"MET":"MISSED",
    reason:matches.length+" matching agent turns; threshold "+limit,
    evidence:matches.map(t=>({line:t.line,quote:t.text}))};
  }
@@ -228,6 +228,7 @@ export function calculateCriterion(
 
     return {
       ...a,
+      method:"qualitative",
 
       state:
         ["MET", "MISSED"].includes(state) &&
