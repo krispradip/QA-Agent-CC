@@ -1425,3 +1425,14 @@ footer {
 .rubric-row.qa-child-active-parent{border-left:3px solid #b77925;background:rgba(183,121,37,.075)}
 .qa-child-active-badge{display:inline-block;margin-left:7px;padding:3px 7px;border-radius:999px;background:#fff0d3;color:#7d4a10;border:1px solid #e5bb77;font-size:11px;font-weight:700;white-space:nowrap}
 @media(max-width:720px){.qa-child-active-badge{white-space:normal;font-size:10px;margin-left:4px}}
+
+/* QA-CONFIG-LAYOUT-003 | Full-width actions, single-column rubric, no orphan panels.
+   The rubric editor can grow without moving the evaluator to an unrelated column. */
+.configuration{display:flex!important;flex-direction:column;align-items:stretch;gap:16px;width:100%;min-width:0}
+.configuration>.qa-floating-save{position:sticky;top:8px;z-index:35;align-self:stretch;width:100%;margin:0}
+.configuration>.index{position:static!important;max-height:none!important;overflow:visible!important;width:100%;min-width:0}
+.configuration>.qa-evaluator-section{width:100%;margin:0!important}
+.configuration>.qa-evaluator-section>.panel{width:100%;max-width:none}
+.configuration .rubric-row{scroll-margin-top:95px}
+.configuration .qa-child-active-badge{vertical-align:middle}
+@media(min-width:1050px){.configuration>.qa-evaluator-section>.panel{max-width:100%}}
