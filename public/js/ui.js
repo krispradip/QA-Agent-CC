@@ -546,6 +546,11 @@ Customer: I need help with points.">${esc(state.pasteDraft || "")}</textarea>
             <div style="width:${pct}%"></div>
           </div>
 
+          <div class="qa-timing-status" id="qa-timing-status" aria-live="off">
+            <span>Elapsed <strong id="qa-elapsed">00:00</strong></span>
+            <span>ETA <strong id="qa-eta">Calculating…</strong></span>
+            <span id="qa-batch-count">0 / 0 processed</span>
+          </div>
           <div class="progress-numbers">
             <div>
               <b>${done}</b>
@@ -774,7 +779,7 @@ export function callDetail(call, rubric) {
                         ${esc(a.state)}
                       </span>
 
-                      ${esc(a.text)}
+                      <span class="qa-method-tag ${a.method==="quantitative"?"qa-method-rule":"qa-method-ai"}">${a.method==="quantitative"?"Quantitative · Rule":"Qualitative · Gemini"}</span> ${esc(a.text)}
                     </div>
 
                     ${(a.evidence || []).map(e => `
