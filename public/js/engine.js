@@ -127,12 +127,25 @@ function executeRule(call,def,rule,rules) {
  if(!Number.isFinite(limit)||limit<0)return unknown("Invalid rule threshold");
  const turns=call.turns||[];
  if(id==="greeting_time"||id==="fallback_greeting"){
-  const first=turns.filter(t=>t.speaker==="agent").find(t=>
-   (rules.greetingTerms||[]).some(term=>term&&t.text.toLowerCase().includes(term.toLowerCase())));
+  // QA-GREETING-ASR-001 | Genesys Arabic ASR often truncates the final
+  // pronoun in "شكرا لاتصالك" or inserts ellipses. Match the stable
+  // greeting phrase without requiring an exact final character.
+  const normalizeGreeting=x=>String(x||"").toLowerCase()
+    .replace(/[\u064b-\u065f\u0670\u0640]/g,"")
+    .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,"")
+    .replace(/[^\p{L}\p{N}]+/gu," ").trim().replace(/\s+/g," ");
+  const first=turns.filter(t=>t.speaker==="agent").find(t=>{
+    const spoken=normalizeGreeting(t.text);
+    return (rules.greetingTerms||[]).some(term=>{
+      const configured=normalizeGreeting(term);
+      return configured && (spoken.includes(configured) ||
+        (configured==="شكرا لاتصالك" && spoken.includes("شكرا لاتصال")));
+    });
+  });
   if(!first||typeof first.seconds!=="number"||!Number.isFinite(first.seconds))
    return unknown("Timestamped greeting is not available");
   return {id,text:def.name,method:"quantitative",state:first.seconds<=limit?"MET":"MISSED",
-   reason:"Greeting at "+first.seconds+"s; threshold "+limit+"s",
+   reason:"Greeting at "+first.timestamp+" ("+first.seconds+"s); threshold "+limit+"s",
    evidence:[{line:first.line,quote:first.text}]};
  }
  if(phrases[id]){
