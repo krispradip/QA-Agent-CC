@@ -90,6 +90,10 @@ const titles = {
  * Render the selected application page.
  */
 function render() {
+  const preserveScroll = state.page === "config";
+  const previousY = preserveScroll ? window.scrollY : 0;
+  const previousPanel = preserveScroll ? root.querySelector(".configuration .index") : null;
+  const previousPanelY = previousPanel?.scrollTop || 0;
   const [title, sub] = titles[state.page];
 
   $("#page-title").textContent = title;
@@ -120,6 +124,11 @@ function render() {
             );
 
   filterRows();
+  if (preserveScroll) {
+    const panel = root.querySelector(".configuration .index");
+    if (panel) panel.scrollTop = previousPanelY;
+    window.scrollTo(0, previousY);
+  }
 }
 
 /**
@@ -693,6 +702,10 @@ root.addEventListener("click", event => {
 
   if (button.id === "saveRubricAll") {
     if (!captureCriterionDraft()) return;
+    const model = root.querySelector("#model");
+    const globalInstructions = root.querySelector("#global");
+    if (model) state.rubric.model = model.value;
+    if (globalInstructions) state.rubric.instructions = globalInstructions.value;
     save("All rubric changes saved. New assessments use this revision.");
     return;
   }
@@ -816,9 +829,14 @@ root.addEventListener(
         // Parent selection is independent of saved child check and rule states.
         // Never silently enable a quantitative rule when toggling its parent.
 
-        save(
-          "Parameter enable/disable saved."
-        );
+        // Save All persists this change; do not re-render or reset scroll.
+        const row = target.closest(".rubric-row");
+        const activeChildren = c.checkpoints?.filter(a=>a.enabled===true).length || 0;
+        const activeRules = linkedRules(c.id).filter(id=>
+          state.rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled)).length;
+        row?.classList.toggle("qa-child-active-parent",!c.enabled&&(activeChildren+activeRules)>0);
+        const badge = row?.querySelector(".qa-child-active-badge");
+        if (badge) badge.hidden = c.enabled;
       }
     }
   }
