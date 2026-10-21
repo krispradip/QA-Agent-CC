@@ -1436,3 +1436,10 @@ footer {
 .configuration .rubric-row{scroll-margin-top:95px}
 .configuration .qa-child-active-badge{vertical-align:middle}
 @media(min-width:1050px){.configuration>.qa-evaluator-section>.panel{max-width:100%}}
+
+/* QA-EVAL-METHOD-001 | Trace evidence origin in scorecard. */
+.qa-method-tag{display:inline-block;padding:2px 6px;margin:0 6px;border:1px solid #d8e4e6;border-radius:5px;font-size:10px;font-weight:700;color:#476477;background:#f3f7f8;vertical-align:middle}
+.qa-method-rule{background:#edf4ff;color:#305d96;border-color:#c9dbf3}
+.qa-method-ai{background:#f2edfb;color:#65528e;border-color:#ded3f1}
+.qa-timing-status{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;margin:10px 0;color:#526976;font-size:12px}
+.qa-timing-status strong{color:#173e4b;font-variant-numeric:tabular-nums}
