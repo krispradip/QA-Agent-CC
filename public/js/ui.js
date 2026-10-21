@@ -365,10 +365,7 @@ export function studio(state) {
                 placeholder="Agent: Hello, welcome to SHARE.
 Customer: I need help with points.">${esc(state.pasteDraft || "")}</textarea>
 
-              <button class="secondary"
-                id="pasteLoad">
-                Import pasted transcript
-              </button>
+              <p class="muted qa-auto-import-hint">Paste a transcript to import automatically. Then choose Evaluate all or Evaluate selected.</p>
               <p id="import-feedback" class="muted" role="status" aria-live="polite">${esc(state.importFeedback || "")}</p>
             </details>
           </div>
@@ -394,9 +391,14 @@ Customer: I need help with points.">${esc(state.pasteDraft || "")}</textarea>
             </button>
 
             <button class="secondary"
+              id="stopAfter"
+              ${running ? "" : "disabled"}>
+              Stop after current interaction
+            </button>
+            <button class="secondary"
               id="stop"
               ${running ? "" : "disabled"}>
-              Stop
+              Stop now
             </button>
 
             <button class="secondary"
@@ -779,7 +781,7 @@ export function callDetail(call, rubric) {
                         ${esc(a.state)}
                       </span>
 
-                      <span class="qa-method-tag ${a.method==="quantitative"?"qa-method-rule":"qa-method-ai"}">${a.method==="quantitative"?"Quantitative · Rule":"Qualitative · Gemini"}</span> ${esc(a.text)}
+                      <span class="qa-method-tag ${a.method==="quantitative"?"qa-method-rule":"qa-method-ai"}">${a.method==="quantitative"?"Quantitative · Rule":"Qualitative · Model"}</span> ${esc(a.text)}
                     </div>
 
                     ${(a.evidence || []).map(e => `
