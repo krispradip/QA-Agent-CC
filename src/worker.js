@@ -371,7 +371,7 @@ For EACH criterion and EACH checkpoint return:
 MET, MISSED, UNKNOWN or NA.
 
 MET:
-Observed behaviour clearly satisfies the checkpoint.
+Observed behaviour clearly satisfies the checkpoint. The cited agent or customer turns must explicitly support the exact behaviour. A greeting alone does not prove agent identity, introduction, or invitation to explain the issue.
 
 MISSED:
 Clear contrary behaviour, or an obligation demonstrably
@@ -385,7 +385,7 @@ NA:
 The checkpoint is genuinely inapplicable.
 Explain briefly.
 
-Cite actual numbered transcript turns for MET/MISSED.
+Cite actual numbered transcript turns for MET/MISSED. For MET, cite the specific words demonstrating the requirement, not merely a nearby relevant turn. When the cited text does not substantiate the checkpoint, use UNKNOWN rather than awarding MET. For omissions, MISSED requires sufficient complete conversation context, not a guessed absence.
 
 Do not invent:
 - dialogue or quotations
