@@ -329,6 +329,7 @@ async function run(all) {
    */
   const snapshot = clone(state.rubric);
 
+  state.stopAfterCurrent = false;
   state.running = true;
   state.evalProgress = {started:Date.now(),total:target.length,completed:0};
   if (progressClock) clearInterval(progressClock);
@@ -394,12 +395,14 @@ async function run(all) {
       await persist();
       render();
       paintProgress();
+      if (state.stopAfterCurrent) { stopped = true; break; }
     }
 
   } finally {
     if (progressClock) clearInterval(progressClock);
     progressClock = null;
     state.running = false;
+    state.stopAfterCurrent = false;
     state.controller = null;
 
     state.phase = quota
@@ -706,6 +709,12 @@ root.addEventListener("click", event => {
     return;
   }
 
+  if (button.id === "stopAfter") {
+    state.stopAfterCurrent = true;
+    notify("Will stop after the current interaction completes.");
+    return;
+  }
+
   if (button.id === "stop") {
     state.controller?.abort();
     return;
@@ -878,9 +887,25 @@ root.addEventListener(
 /**
  * Live queue search.
  */
+// QA-PASTE-AUTO | Debounce transcript paste; do not auto-run AI or disrupt typing.
+let pasteImportTimer = null;
 root.addEventListener("input", event => {
   if (event.target.id === "paste") {
     state.pasteDraft = event.target.value;
+    if (pasteImportTimer) clearTimeout(pasteImportTimer);
+    const snapshot = state.pasteDraft;
+    if (state.running || !snapshot.trim()) return;
+    pasteImportTimer = setTimeout(() => {
+      if (state.running || state.pasteDraft !== snapshot) return;
+      try {
+        const parsed = parseExport(snapshot, "paste.txt");
+        if (!parsed.some(c=>c.status==="READY")) return;
+        load(snapshot,"paste.txt");
+      } catch (err) {
+        const feedback = root.querySelector("#import-feedback");
+        if (feedback) feedback.textContent = "Waiting for a valid speaker-labelled transcript.";
+      }
+    }, 650);
   }
   if (event.target.id === "search") {
     state.search = event.target.value;
