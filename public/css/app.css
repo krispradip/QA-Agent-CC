@@ -1443,3 +1443,7 @@ footer {
 .qa-method-ai{background:#f2edfb;color:#65528e;border-color:#ded3f1}
 .qa-timing-status{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;margin:10px 0;color:#526976;font-size:12px}
 .qa-timing-status strong{color:#173e4b;font-variant-numeric:tabular-nums}
+
+/* QA-EVIDENCE-AUDIT-001 | Original versus final semantic validation status. */
+.qa-validation-warning{font-size:12px;line-height:1.5;padding:8px 10px;margin:8px 0;border-left:3px solid #b77925;background:#fff7e9;color:#724d1b}
+.qa-validation-ok{display:inline-block;margin:5px 0;font-size:11px;color:#256c51;font-weight:600}
