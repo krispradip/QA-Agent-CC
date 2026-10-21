@@ -326,8 +326,8 @@ const checkpoints = {
 // QA-CHECK-COVERAGE | Explicit evidence checks for previously unconfigured parameters.
 // These do not imply transcript-only proof; evidence-dependent checks remain unverifiable.
 const additionalChecks = {
-  greet7:["Greeting starts within the configured greeting threshold"],
-  greet10:["Fallback greeting starts within the configured fallback threshold"],
+  greet7:[], // Timing is deterministic; no Gemini duplicate.
+  greet10:[], // Timing is deterministic; no Gemini duplicate.
   verification:["Follows approved customer verification procedure","Does not disclose account information before verification"],
   interruption:["Allows the customer to finish speaking","Avoids interrupting key customer explanations"],
   pace:["Maintains an understandable conversational pace","Adapts pace when the customer needs clarification"],
@@ -340,7 +340,7 @@ const additionalChecks = {
   disconnect:["Does not intentionally terminate the interaction improperly","Follows the correct process when the interaction disconnects"]
 };
 for (const [id,items] of Object.entries(additionalChecks)) {
-  if (!checkpoints[id]?.length) checkpoints[id] = items;
+  if (!Object.prototype.hasOwnProperty.call(checkpoints,id)) checkpoints[id] = items;
 }
 export const GROUPS = [
   ...new Set(specs.map(x => x[1]))
