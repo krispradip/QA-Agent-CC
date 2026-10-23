@@ -9,28 +9,28 @@ export const REFERENCE_SCHEMAS = {
     description: "Potential speech-to-text renderings of product, brand and service names. Not automatic replacements.",
     columns: ["canonical","variant","language","businessUnit","market","channel","notes"],
     required: ["canonical","variant"],
-    example: ["SHARE","Shair","en","SHARE","UAE","Call","Only accept when surrounding dialogue supports the brand"]
+    example: ["SHARE","Shair","en","All","All","Call","Only accept when surrounding dialogue supports the brand"]
   },
   semantic: {
     title: "Semantic equivalents",
     description: "Different natural expressions of the same observable service behaviour.",
     columns: ["concept","phrase","language","businessUnit","market","channel","criterionId","notes"],
     required: ["concept","phrase"],
-    example: ["Invite customer to explain","Can I help you?","en","SHARE","UAE","Call","opening","Equivalent invitation, not identity proof"]
+    example: ["Invite customer to explain","Can I help you?","en","All","All","Call","opening","Equivalent invitation, not identity proof"]
   },
   terminology: {
     title: "Business terminology",
     description: "Business-specific vocabulary and meanings; aliases are separated with a vertical bar.",
     columns: ["term","meaning","aliases","language","businessUnit","market","channel","notes"],
     required: ["term","meaning"],
-    example: ["SHARE Points","Loyalty reward points","reward points|SHARE balance","en","SHARE","UAE","Call","Context only"]
+    example: ["SHARE Points","Loyalty reward points","reward points|SHARE balance","en","All","All","Call","Context only"]
   },
   guidance: {
     title: "Evaluation guidance & examples",
     description: "Approved positive/negative examples, evidence conditions and assessment scope by checkpoint.",
     columns: ["criterionId","exampleType","example","evaluationRule","scope","language","businessUnit","market","channel","notes"],
     required: ["criterionId","exampleType","example","evaluationRule","scope"],
-    example: ["opening-2","negative","Agent provides their name 8 minutes into the call","Introduction must happen within the configured opening scope","opening","en","SHARE","UAE","Call","Requires human-approved rubric alignment"]
+    example: ["opening-2","negative","Agent provides their name 8 minutes into the call","Introduction must happen within the configured opening scope","opening","en","All","All","Call","Requires human-approved rubric alignment"]
   }
 };
 const KEY="qaai-reference-library-v1";
@@ -39,6 +39,7 @@ const MAX_DATASETS=30;
 const MAX_CSV_CHARS=500000;
 const MAX_FIELD=600;
 const MAX_CONTEXT=40;
+const MAX_CONTEXT_CHARS=14000;
 const norm=s=>String(s??"").toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu," ").trim();
 
 export function csvEscape(s) {
@@ -174,8 +175,9 @@ const applies=(entry,call,criterionIds)=>{
 export function activeReferenceEntries(library,call,criteria){
   const ids=(criteria||[]).map(c=>typeof c==="string"?c:c.id);
   const dialogue=(call.turns||[]).map(t=>t.text||"").join(" ");
-  const haystack=norm(dialogue);
+  const haystack=" "+norm(dialogue)+" ";
   const relevant=[];
+  let usedCharacters=0;
   const seen=new Set();
   for(const dataset of library?.datasets||[]){
     if(dataset.enabled!==true)continue;
@@ -186,12 +188,16 @@ export function activeReferenceEntries(library,call,criteria){
         dataset.type==="terminology"?[entry.term,...(entry.aliases||"").split("|")]:[];
       // Guidance is already relevant by criterion scope, but other references
       // require an actual match in conversation or configured criteria.
-      if(candidates.length&&!candidates.some(s=>s&&haystack.includes(norm(s))))continue;
+      if(candidates.length&&!candidates.some(s=>s&&norm(s)&&haystack.includes(" "+norm(s)+" ")))continue;
       const summary=Object.fromEntries(REFERENCE_SCHEMAS[dataset.type].columns.map(c=>[c,entry[c]||""]));
       const key=dataset.type+"|"+JSON.stringify(summary);
       if(seen.has(key))continue;
+      const reference={type:dataset.type,source:dataset.name,version:dataset.version,...summary};
+      const size=JSON.stringify(reference).length;
+      if(usedCharacters+size>MAX_CONTEXT_CHARS)continue;
+      usedCharacters+=size;
       seen.add(key);
-      relevant.push({type:dataset.type,source:dataset.name,version:dataset.version,...summary});
+      relevant.push(reference);
       if(relevant.length===MAX_CONTEXT)return relevant;
     }
   }
