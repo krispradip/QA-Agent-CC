@@ -1447,3 +1447,29 @@ footer {
 /* QA-EVIDENCE-AUDIT-001 | Original versus final semantic validation status. */
 .qa-validation-warning{font-size:12px;line-height:1.5;padding:8px 10px;margin:8px 0;border-left:3px solid #b77925;background:#fff7e9;color:#724d1b}
 .qa-validation-ok{display:inline-block;margin:5px 0;font-size:11px;color:#256c51;font-weight:600}
+
+/* QUALIS STUDIO V3 - isolated presentation refresh */
+.studio-v3{display:block!important}
+.studio-v3 .studio-intake-column{display:block;min-width:0}
+.studio-v3 .studio-intake-panel{background:linear-gradient(135deg,#fff 0%,#f7f8ff 70%,#eefaff 100%);border:1px solid #dfe5ff}
+.studio-v3 .studio-intake-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:12px;margin:16px 0}
+.studio-v3 .intake-tile{min-width:0;border:1px solid #e4e8f3;border-radius:15px;padding:15px;background:rgba(255,255,255,.86);box-shadow:0 8px 22px rgba(35,42,110,.045)}
+.studio-v3 .intake-paste{border-color:#d8c6ff;background:linear-gradient(145deg,#fff,#faf6ff)}
+.studio-v3 .intake-file{border-color:#c2e8e4;background:linear-gradient(145deg,#fff,#f3fdfc)}
+.studio-v3 .intake-audio{border-color:#ffe0c0;background:linear-gradient(145deg,#fff,#fff8f0)}
+.studio-v3 .intake-tile-heading{display:flex;align-items:center;gap:9px;color:#172451;margin-bottom:12px}
+.studio-v3 .intake-step{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;color:#fff;font-size:11px;font-weight:800;background:#6848ed}
+.studio-v3 .intake-file .intake-step{background:#059d8c}
+.studio-v3 .intake-audio .intake-step{background:#f09335}
+.studio-v3 .intake-tile .upload{min-height:145px;border-radius:12px;background:rgba(255,255,255,.75)}
+.studio-v3 .intake-tile textarea{box-sizing:border-box;width:100%;min-height:112px;border:1px solid #dedcf5;border-radius:10px;background:#fff;padding:12px;resize:vertical}
+.studio-v3 .intake-tile summary{font-size:12px;color:#635b83;cursor:pointer;margin-bottom:9px}
+.studio-v3 .intake-tile small{font-size:11px;color:#6b7491}
+.studio-v3 .audio-coming-soon{opacity:.76;cursor:not-allowed}
+.studio-v3 .ai-panel{background:radial-gradient(circle at 50% 30%,#e8ddff 0%,#f4f4ff 35%,#e8f8ff 100%);border:1px solid #d6d9ff;border-radius:22px;min-height:320px;text-align:center;box-shadow:0 16px 44px rgba(82,72,181,.09)}
+.studio-v3 .ai-panel-head{color:#6554b7}
+.studio-v3 .orb-field{margin-left:auto;margin-right:auto}
+.studio-v3 .orb{background:linear-gradient(145deg,#734dff,#285bf0);color:#fff;font-weight:900;box-shadow:0 0 45px rgba(91,76,242,.28)}
+.studio-v3 .studio-intake-column>.panel:nth-child(2){margin-top:16px}
+@media(max-width:1050px){.studio-v3 .studio-intake-grid{grid-template-columns:1fr 1fr}.studio-v3 .intake-paste{grid-column:1/-1}}
+@media(max-width:650px){.studio-v3 .studio-intake-grid{grid-template-columns:1fr}.studio-v3 .intake-paste{grid-column:auto}}
