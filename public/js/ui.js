@@ -558,8 +558,10 @@ export function studio(state) {
 
                     <td>
                       <div class="studio-queue-agent">
-                        <b>${esc(c.agent)}</b>
-                        <small>${esc(c.id || c.key)}</small>
+                        <span class="studio-agent-identity">
+                          <b>${esc(c.agent)}</b>
+                          <small>${esc(c.id || c.key)}</small>
+                        </span>
                         <button type="button" class="secondary studio-inspect-assessment"
                           data-open="${esc(c.key)}"
                           ${c.status === "COMPLETE" && c.findings?.length ? "" : "disabled"}
