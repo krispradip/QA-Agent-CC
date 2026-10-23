@@ -725,7 +725,7 @@ root.addEventListener("click", event => {
     return;
   }
 
-  if (button.hasAttribute("data-ref-delete")) {
+  if (button.dataset.refDelete !== undefined) {
     if (!confirm("Delete this stored reference version from this browser?")) return;
     try {
       state.references = saveReferenceLibrary(deleteReferenceDataset(state.references,button.dataset.refDelete));
