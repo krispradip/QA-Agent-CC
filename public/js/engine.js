@@ -121,7 +121,7 @@ const phrases = {mandatory_greeting:"greetingTerms",mandatory_disclosure:"disclo
  prohibited_phrase:"prohibitedTerms",closing_statement:"closingTerms"};
 const minimum = new Set(["mandatory_greeting","mandatory_disclosure","closing_statement",
  "verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"]);
-function executeRule(call,def,rule,rules) {
+export function executeRule(call,def,rule,rules) {
  const id=def.id,limit=Number(rule.value);
  const unknown=reason=>({id,text:def.name,method:"quantitative",state:"UNKNOWN",reason,evidence:[]});
  if(!Number.isFinite(limit)||limit<0)return unknown("Invalid rule threshold");
