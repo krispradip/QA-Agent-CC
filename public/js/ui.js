@@ -1107,26 +1107,19 @@ export function configuration(rubric, selected) {
             </span>
           </div>
 
-          <label>Active Gemini model</label>
-
-          <select id="model">
-            <option
-              value="gemini-3.5-flash-lite"
-              ${rubric.model ===
-                "gemini-3.5-flash-lite"
-                  ? "selected" : ""}>
-              Gemini 3.5 Flash-Lite (default)
-            </option>
-
-            <option
-              value="gemini-2.5-flash-lite"
-              ${rubric.model ===
-                "gemini-2.5-flash-lite"
-                  ? "selected" : ""}>
-              Gemini 2.5 Flash-Lite
-              (legacy access)
-            </option>
+          <label>LLM provider</label>
+          <select id="provider">
+            <option value="gemini" ${(rubric.provider||"gemini")==="gemini"?"selected":""}>Google Gemini</option>
+            <option value="databricks" ${rubric.provider==="databricks"?"selected":""}>Databricks Model Serving</option>
           </select>
+
+          <label>Active model / endpoint</label>
+          <select id="model">
+            <option value="gemini-3.5-flash-lite" ${(rubric.provider||"gemini")==="gemini"&&rubric.model==="gemini-3.5-flash-lite"?"selected":""} ${rubric.provider==="databricks"?"hidden":""}>Gemini 3.5 Flash-Lite</option>
+            <option value="gemini-2.5-flash-lite" ${(rubric.provider||"gemini")==="gemini"&&rubric.model==="gemini-2.5-flash-lite"?"selected":""} ${rubric.provider==="databricks"?"hidden":""}>Gemini 2.5 Flash-Lite</option>
+            <option value="databricks-configured" ${rubric.provider==="databricks"?"selected":""} ${rubric.provider==="databricks"?"":"hidden"}>Databricks — approved serving endpoint (Cloudflare-configured)</option>
+          </select>
+          <p class="footnote">Databricks endpoint and token are secured in Cloudflare Worker bindings. Both evaluation and independent review use the selected provider. No fallback to another provider occurs silently.</p>
 
           <label>
             Global evaluator instructions
