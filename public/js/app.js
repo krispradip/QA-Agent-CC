@@ -13,7 +13,8 @@
 import {
   loadRubric,
   saveRubric,
-  linkedRules
+  linkedRules,
+  setCriterionEnabled
 } from "./config.js";
 
 import {
@@ -126,12 +127,30 @@ function render() {
             );
 
   filterRows();
+  if (state.page === "config") {
+    for (const criterion of state.rubric.criteria) updateParentSelectionIndicator(criterion.id);
+  }
   if (state.page === "studio") paintProgress();
   if (preserveScroll) {
     const panel = root.querySelector(".configuration .index");
     if (panel) panel.scrollTop = previousPanelY;
     window.scrollTo(0, previousY);
   }
+}
+
+/** Sync the visible master checkbox with enabled child checks, including a
+ * mixed state when a business user deliberately selects only some checks. */
+function updateParentSelectionIndicator(id) {
+  const criterion = state.rubric.criteria.find(c => c.id === id);
+  const input = [...root.querySelectorAll("[data-enabled]")].find(x => x.dataset.enabled === id);
+  if (!criterion || !input) return;
+  const owned = linkedRules(id);
+  const rules = (state.rubric.rules?.deterministic || []).filter(r => owned.includes(r.id));
+  const checks = [...(criterion.checkpoints || []), ...rules];
+  const selected = checks.filter(a => a.enabled === true).length;
+  input.checked = criterion.enabled === true;
+  input.indeterminate = criterion.enabled === true && selected > 0 && selected < checks.length;
+  input.setAttribute("aria-checked", input.indeterminate ? "mixed" : String(input.checked));
 }
 
 /**
@@ -583,7 +602,7 @@ function captureCriterionDraft() {
     const items = inputs.map(input => ({
       id: c.id + "-" + (Number(input.dataset.anchorText) + 1),
       text: input.value.trim(),
-      enabled: !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked,
+      enabled: c.enabled !== false && !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked,
       points: Number(root.querySelector('[data-anchor-points="' + input.dataset.anchorText + '"]')?.value)
     }));
     if (!items.length || items.length > 12 || items.some(x=>!x.text || x.text.length>250 || !Number.isFinite(x.points) || x.points<0 || x.points>100)) {
@@ -596,7 +615,7 @@ function captureCriterionDraft() {
   // Persist nested quantitative rules with the same rubric revision.
   const editedRules = [...root.querySelectorAll("[data-rule-value]")].map(input => ({
     id: input.dataset.ruleValue,
-    enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+    enabled: c.enabled !== false && !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
     operator: root.querySelector('[data-rule-operator="' + input.dataset.ruleValue + '"]')?.value || "<=",
     value: input.value.trim() === "" ? NaN : Number(input.value)
   }));
@@ -903,32 +922,46 @@ root.addEventListener(
       return;
     }
 
-    if (target.dataset.enabled) {
-      const c = state.rubric.criteria.find(
-        x => x.id === target.dataset.enabled
-      );
+    if (target.hasAttribute("data-enabled")) {
+      const id = target.dataset.enabled;
+      if (!setCriterionEnabled(state.rubric, id, target.checked)) return;
 
-      if (c) {
-        c.enabled = target.checked;
-        // Parent selection is independent of saved child check and rule states.
-        // Never silently enable a quantitative rule when toggling its parent.
-
-        // Save All persists this change; do not re-render or reset scroll.
-        const row = target.closest(".rubric-row");
-        const activeChildren = c.checkpoints?.filter(a=>a.enabled===true).length || 0;
-        const activeRules = linkedRules(c.id).filter(id=>
-          state.rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled)).length;
-        row?.classList.toggle("qa-child-active-parent",!c.enabled&&(activeChildren+activeRules)>0);
-        const badge = row?.querySelector(".qa-child-active-badge");
-        if (badge) badge.hidden = c.enabled;
-        else if (!c.enabled && activeChildren + activeRules > 0) {
-          const button = row?.querySelector("[data-criterion]");
-          const expand = button?.querySelector(".qa-expand-indicator");
-          expand?.insertAdjacentHTML("beforebegin",
-            '<span class="qa-child-active-badge" title="Parent unchecked; selected child checks still run">' +
-            (activeChildren + activeRules) + ' active children</span> ');
-        }
+      // Make both qualitative and linked numeric checkboxes respond immediately.
+      // Do not re-render: the user might have unsaved instruction/weight edits.
+      const criterion = state.rubric.criteria.find(c => c.id === id);
+      if (id === state.criterion) {
+        root.querySelectorAll("[data-anchor-enabled]").forEach(input => {
+          const child = criterion.checkpoints?.[Number(input.dataset.anchorEnabled)];
+          input.checked = !!child?.enabled;
+        });
+        root.querySelectorAll("[data-rule-enabled]").forEach(input => {
+          const child = state.rubric.rules.deterministic?.find(r => r.id === input.dataset.ruleEnabled);
+          input.checked = !!child?.enabled;
+        });
       }
+      target.indeterminate = false;
+      updateParentSelectionIndicator(id);
+      return;
+    }
+
+    if (target.hasAttribute("data-anchor-enabled") || target.hasAttribute("data-rule-enabled")) {
+      const criterion = state.rubric.criteria.find(c => c.id === state.criterion);
+      if (!criterion) return;
+      if (target.hasAttribute("data-anchor-enabled")) {
+        const child = criterion.checkpoints?.[Number(target.dataset.anchorEnabled)];
+        if (child) child.enabled = target.checked;
+      } else {
+        const child = state.rubric.rules.deterministic?.find(r => r.id === target.dataset.ruleEnabled);
+        if (child && linkedRules(criterion.id).includes(child.id)) child.enabled = target.checked;
+      }
+      const activeQualitative = criterion.checkpoints?.some(a => a.enabled === true);
+      const activeNumeric = linkedRules(criterion.id).some(id =>
+        state.rubric.rules.deterministic?.some(r => r.id === id && r.enabled === true)
+      );
+      // A partial selection keeps the parent active, but only chosen checks run.
+      criterion.enabled = !!(activeQualitative || activeNumeric);
+      updateParentSelectionIndicator(criterion.id);
+      return;
     }
   }
 );
