@@ -149,7 +149,7 @@ export function overview(calls, rubric, selectedAgent = "", period = { mode:"all
     <section class="hero">
       <div>
         <div class="eyebrow">
-          QAMAFer.AI / QUALITY INTELLIGENCE
+          QA.MAFer.AI / QUALITY INTELLIGENCE
         </div>
 
         <h2>
@@ -245,9 +245,9 @@ function aiPanel(phase, message) {
     : failure ? "Review the processing error and retry"
     : "Your quality intelligence engine is ready";
   return `
-    <section class="ai-panel qmf-evaluator ${active ? "active qmf-processing" : "qmf-ready"} ${failure ? "error" : ""}" aria-label="QAMAFer.AI evaluator">
+    <section class="ai-panel qmf-evaluator ${active ? "active qmf-processing" : "qmf-ready"} ${failure ? "error" : ""}" aria-label="QA.MAFer.AI evaluator">
       <div class="ai-panel-head">
-        <span class="qmf-eval-brand"><span class="qmf-eval-star">✦</span> QAMAFer.AI EVALUATOR</span>
+        <span class="qmf-eval-brand"><span class="qmf-eval-star">✦</span> QA.MAFer.AI EVALUATOR</span>
         <span class="qmf-engine-pill"><span class="qmf-live-dot"></span>${active ? "PROCESSING" : failure ? "ATTENTION REQUIRED" : "READY"}</span>
       </div>
       <div class="qmf-eval-visual" aria-hidden="true">
@@ -257,7 +257,7 @@ function aiPanel(phase, message) {
         <div class="qmf-orbit qmf-orbit-mid"></div>
         <div class="qmf-orbit qmf-orbit-inner"></div>
         <div class="qmf-core-shell">
-          <div class="qmf-core"><span>QAMAFer<span class="qmf-core-suffix">.AI</span></span></div>
+          <div class="qmf-core"><span>QA.MAFer<span class="qmf-core-suffix">.AI</span></span></div>
         </div>
         <span class="qmf-spark qmf-spark-a">✧</span>
         <span class="qmf-spark qmf-spark-b">✦</span>
@@ -590,7 +590,7 @@ export function studio(state) {
 
           <p>
             The model checks rubric behaviours.
-            QAMAFer.AI calculates criterion scores
+            QA.MAFer.AI calculates criterion scores
             using fixed checkpoint rules.
             Missing evidence stays unscored.
           </p>
