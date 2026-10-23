@@ -992,7 +992,7 @@ function renderCriterionEditor(c, rubric) {
     const setting=rubric.rules.deterministic?.find(r=>r.id===id)||def;
     const points=c.ruleWeights?.[id]??1;
     return `<div class="qa-check-row">
-      <label class="qa-check-name"><input type="checkbox" data-rule-enabled="${esc(id)}" ${setting.enabled?"checked":""}><span>${esc(def.name)}</span></label>
+      <label class="qa-check-name"><input type="checkbox" data-rule-enabled="${esc(id)}" ${c.enabled && setting.enabled?"checked":""}><span>${esc(def.name)}</span></label>
       <label class="qa-check-value"><small>Comparison</small><select data-rule-operator="${esc(id)}">${[["<=","At most (≤)"],["<","Less than (<)"],[">=","At least (≥)"],[">","Greater than (>)"],["==","Exactly (=)"],["!=","Not equal (≠)"]].map(([value,label])=>`<option value="${esc(value)}" ${(setting.operator || (["mandatory_greeting","mandatory_disclosure","closing_statement","verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"].includes(id)?">=":"<="))===value?"selected":""}>${esc(label)}</option>`).join("")}</select></label><label class="qa-check-value"><small>Threshold (${esc(def.unit)})</small><input type="number" min="0" step="any" data-rule-value="${esc(id)}" value="${esc(setting.value)}"></label>
       <label class="qa-check-points"><small>Points</small><input type="number" min="0" max="100" step="0.5" data-rule-points="${esc(id)}" value="${esc(points)}"></label>
       <small class="qa-check-help">${esc(def.description)} · ${esc(def.source)} evidence</small>
@@ -1000,7 +1000,7 @@ function renderCriterionEditor(c, rubric) {
   }).join("");
   const qualitative=c.checkpoints.map((a,i)=>`
     <div class="qa-check-row">
-      <label class="qa-check-name"><input type="checkbox" data-anchor-enabled="${i}" ${a.enabled!==false?"checked":""}><span>Qualitative check ${i+1}</span></label>
+      <label class="qa-check-name"><input type="checkbox" data-anchor-enabled="${i}" ${c.enabled && a.enabled!==false?"checked":""}><span>Qualitative check ${i+1}</span></label>
       <label class="qa-check-text"><small>Gemini evaluation instruction</small><textarea rows="2" data-anchor-text="${i}">${esc(a.text)}</textarea></label>
       <label class="qa-check-points"><small>Points</small><input type="number" min="0" max="100" step="0.5" data-anchor-points="${i}" value="${esc(a.points??1)}"></label>
     </div>`).join("");
@@ -1043,7 +1043,7 @@ export function configuration(rubric, selected) {
         </div>
 
         <p class="muted">
-          Use + to expand a parameter and − to collapse it. Configure the checks and points, then save. Settings persist in this browser.
+          The parent checkbox selects or clears every child check. You can then adjust individual checks; a partially selected parent displays a mixed state. Use +/− to expand or collapse, and Save all changes to apply the selection to future assessments.
         </p>
 
         ${GROUPS.map(group => `
@@ -1069,8 +1069,9 @@ export function configuration(rubric, selected) {
                 const activeRules = linkedRules(x.id).filter(id=>
                   rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled)).length;
                 const childActive = activeChildren + activeRules;
+                const totalChildren = (x.checkpoints?.length || 0) + linkedRules(x.id).filter(id=>rubric.rules.deterministic?.some(r=>r.id===id)).length;
                 return `
-                <div class="rubric-row ${x.id === c?.id ? "on" : ""} ${!x.enabled && childActive ? "qa-child-active-parent" : ""}">
+                <div class="rubric-row ${x.id === c?.id ? "on" : ""}">
                   <input
                     type="checkbox"
                     data-enabled="${esc(x.id)}"
@@ -1079,7 +1080,7 @@ export function configuration(rubric, selected) {
 
                   <button
                     data-criterion="${esc(x.id)}" aria-expanded="${x.id === c?.id}">
-                    ${esc(criterionLabel(x,rubric))} ${!x.enabled && childActive ? `<span class="qa-child-active-badge" title="Parent unchecked; selected child checks still run">${childActive} active ${childActive===1?"child":"children"}</span>` : ""} <span class="qa-expand-indicator">${x.id === c?.id ? "−" : "+"}</span>
+                    ${esc(criterionLabel(x,rubric))} ${x.enabled && childActive>0 && childActive<totalChildren ? `<span class="qa-child-active-badge" title="Some checks disabled; only selected checks will run">${childActive}/${totalChildren} active</span>` : ""} <span class="qa-expand-indicator">${x.id === c?.id ? "−" : "+"}</span>
                   </button>
                 </div>
                 ${x.id === c?.id ? renderCriterionEditor(c, rubric) : ""}
