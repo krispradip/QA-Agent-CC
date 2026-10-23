@@ -79,7 +79,7 @@ test("Successful import does not reserve an intake feedback row or reproduce dup
   });
   assert.doesNotMatch(html,/Select Evaluate to start assessment/);
   assert.doesNotMatch(html,/1 new · 0 existing/);
-  assert.match(html,/id="import-feedback"[^>]*><\\/p>/);
-  assert.match(html,/id="ai-stage" class="qmf-stage"><\\/p>/);
+  assert.match(html,/id="import-feedback"[^>]*><\/p>/);
+  assert.match(html,/id="ai-stage" class="qmf-stage"><\/p>/);
   assert.match(html,/Conversations/);
 });
