@@ -78,6 +78,39 @@ export const EXTRA_RULE_LINKS = {
 export function linkedRules(id) { return EXTRA_RULE_LINKS[id] || RULE_LINKS[id] || []; }
 
 /**
+ * QA-PARENT-CHILD-ACTIVATION
+ * Parent toggles are master switches for every owned quantitative and
+ * qualitative check. Individual checks remain editable while enabled.
+ */
+export function setCriterionEnabled(rubric, criterionId, enabled) {
+  const criterion = rubric.criteria?.find(c => c.id === criterionId);
+  if (!criterion) return false;
+  const active = Boolean(enabled);
+  criterion.enabled = active;
+  for (const check of criterion.checkpoints || []) check.enabled = active;
+  const owned = new Set(linkedRules(criterionId));
+  for (const rule of rubric.rules?.deterministic || []) {
+    if (owned.has(rule.id)) rule.enabled = active;
+  }
+  return true;
+}
+
+/** Enforce hierarchy on saved/restored configuration without losing
+ * individually disabled children of an enabled parent. */
+export function enforceParentSelection(rubric) {
+  for (const criterion of rubric.criteria || []) {
+    if (criterion.enabled !== false) continue;
+    for (const check of criterion.checkpoints || []) check.enabled = false;
+    const owned = new Set(linkedRules(criterion.id));
+    for (const rule of rubric.rules?.deterministic || []) {
+      if (owned.has(rule.id)) rule.enabled = false;
+    }
+  }
+  return rubric;
+}
+
+
+/**
  * QA-CFG-001 — Qualis v2.2.0
  *
  * Canonical SHARE QA rubric.
@@ -432,7 +465,7 @@ export function loadRubric() {
       )
     );
 
-    return {
+    const restored = {
       ...fresh,
 
       revision: Number.isInteger(saved.revision)
@@ -480,6 +513,7 @@ export function loadRubric() {
         };
       })
     };
+    return enforceParentSelection(restored);
 
   } catch {
     return fresh;
@@ -489,6 +523,6 @@ export function loadRubric() {
 export function saveRubric(rubric) {
   localStorage.setItem(
     KEY,
-    JSON.stringify(rubric)
+    JSON.stringify(enforceParentSelection(rubric))
   );
 }
