@@ -462,7 +462,7 @@ function download(kind) {
       calls: state.calls
     }, null, 2);
 
-    name = "qualis-full-assessments.json";
+    name = "QA.MAFer.AI-full-assessments.json";
     type = "application/json";
 
   } else {
@@ -489,7 +489,7 @@ function download(kind) {
     }
 
     content = csv(rows);
-    name = "qualis-call-summary.csv";
+    name = "QA.MAFer.AI-call-summary.csv";
     type = "text/csv";
   }
 
@@ -643,7 +643,7 @@ root.addEventListener("click", event => {
   }
 
   if (button.id === "clearHistory") {
-    if (state.running || !confirm("Permanently delete saved Qualis interaction history from this browser?")) return;
+    if (state.running || !confirm("Permanently delete saved QA.MAFer.AI interaction history from this browser?")) return;
     void clearHistory().then(() => { state.calls = []; state.selected = null; render(); notify("Saved history cleared."); }).catch(e => notify(e.message, true));
     return;
   }
