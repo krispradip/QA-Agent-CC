@@ -436,7 +436,7 @@ export function studio(state) {
           <span class="studio-v5-group-label">EVALUATION</span>
           <div class="studio-v5-actions">
             <button class="primary" id="all" ${ready && !running ? "" : "disabled"}>
-              ${message?.startsWith("Stopped —") ? "▶ Resume pending" : "▷ Evaluate"}${ready ? " (" + ready + ")" : ""}
+              ${message?.startsWith("Stopped —") ? "▶ Resume pending" : "▷ Evaluate"}
             </button>
             <button class="secondary" id="stop" ${running ? "" : "disabled"}>■ Stop evaluation</button>
             <button class="secondary" id="stopAfter" ${running && !state.stopAfterCurrent ? "" : "disabled"}
