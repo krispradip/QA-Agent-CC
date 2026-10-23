@@ -1687,3 +1687,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .qmf-highlight.positive>span{color:#176a3a!important;background:#e7f5ec!important}
 .qmf-highlight.improvement>span{color:#b42332!important;background:#fde9eb!important}
 .qa-method-tag{color:#59636d}
+
+/* QA-BATCH-STOP: visible acknowledgment while the in-flight evaluation finishes. */
+.qa-stop-pending{margin:12px 0;padding:11px 14px;border:1px solid #e4cda2;border-left:4px solid #b77925;border-radius:8px;background:#fff8eb;color:#6c4b19;font-size:13px;font-weight:600;line-height:1.45}
