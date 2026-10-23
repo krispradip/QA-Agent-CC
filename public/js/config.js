@@ -390,6 +390,7 @@ export function defaultRubric() {
   return {
     version: "2.2.0",
     revision: 1,
+    provider: "gemini",
     model: "gemini-3.5-flash-lite",
 
     instructions:
@@ -471,11 +472,11 @@ export function loadRubric() {
       revision: Number.isInteger(saved.revision)
         ? saved.revision : 1,
 
-      model: [
-        "gemini-3.5-flash-lite",
-        "gemini-2.5-flash-lite"
-      ].includes(saved.model)
-        ? saved.model : fresh.model,
+      provider: saved.provider === "databricks" ? "databricks" : "gemini",
+      model: saved.provider === "databricks"
+        ? "databricks-configured"
+        : ["gemini-3.5-flash-lite","gemini-2.5-flash-lite"].includes(saved.model)
+          ? saved.model : fresh.model,
 
       instructions:
         typeof saved.instructions === "string"
