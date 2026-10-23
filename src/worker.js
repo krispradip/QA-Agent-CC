@@ -614,30 +614,56 @@ Return complete JSON matching the schema.
   }
 
   if (!result.ok) {
-    let message;
-
-    if (result.status === 429) {
-      message =
-        "Gemini quota reached. Resume remaining calls later.";
-
-    } else if (result.status === 400) {
-      message =
-        "Gemini rejected the model/schema request (400). " +
-        "Check model access and configuration.";
-
-    } else if (result.status === 403) {
-      message =
-        "Gemini API key lacks permission or access (403).";
-
-    } else {
-      message =
-        `Gemini upstream error ${result.status}`;
+    // Google replies with structured `error.status` and `error.message`.
+    // Do not expose free-form upstream errors to this unauthenticated prototype:
+    // they can contain project identifiers, input excerpts, or credentials.
+    // Expose only the HTTP code, a validated status enum, and a bounded category.
+    let upstream = {};
+    try {
+      const body = await result.json();
+      upstream = body?.error && typeof body.error === "object" ? body.error : {};
+    } catch { /* Preserve the HTTP failure even when body is malformed. */ }
+    const rawCode = String(upstream.status || "");
+    const code = ["INVALID_ARGUMENT", "FAILED_PRECONDITION", "PERMISSION_DENIED",
+      "RESOURCE_EXHAUSTED", "UNAVAILABLE", "NOT_FOUND", "INTERNAL",
+      "DEADLINE_EXCEEDED", "UNAUTHENTICATED"].includes(rawCode)
+      ? rawCode : "UNCLASSIFIED";
+    const detail = String(upstream.message || "").slice(0, 3000).toLowerCase();
+    let category = "UNSPECIFIED";
+    if (/schema|response.?mime.?type|response.?format/.test(detail)) {
+      category = "RESPONSE_SCHEMA";
+    } else if (/api.?key|authentication|invalid credential/.test(detail)) {
+      category = "API_CREDENTIALS";
+    } else if (/billing|payment|free tier|region|country|paid plan/.test(detail)) {
+      category = "BILLING_OR_REGION";
+    } else if (/model|not supported|not found/.test(detail)) {
+      category = "MODEL_ACCESS";
+    } else if (/token|context window|too large|request size|payload size/.test(detail)) {
+      category = "REQUEST_SIZE";
+    } else if (/quota|rate limit|resource exhausted/.test(detail)) {
+      category = "QUOTA_OR_RATE_LIMIT";
+    } else if (/invalid|missing|required|malformed|parameter|field/.test(detail)) {
+      category = "INVALID_REQUEST";
+    }
+    if (code === "FAILED_PRECONDITION" && category === "UNSPECIFIED") {
+      category = "ACCOUNT_PRECONDITION";
+    }
+    if (code === "RESOURCE_EXHAUSTED" && category === "UNSPECIFIED") {
+      category = "QUOTA_OR_RATE_LIMIT";
     }
 
-    return reply(
-      { error: message },
-      result.status === 429 ? 429 : 502
-    );
+    const message = result.status === 429
+      ? "Gemini quota or rate limit reached (429). Run assessments sequentially."
+      : result.status === 400
+        ? `Gemini rejected the request (400, ${code}, ${category}).`
+        : result.status === 403
+          ? `Gemini permission rejected (403, ${code}, ${category}).`
+          : `Gemini upstream HTTP ${result.status} (${code}, ${category}).`;
+
+    return reply({
+      error: message,
+      providerError: {httpStatus:result.status, code, category},
+    }, result.status === 429 ? 429 : 502);
   }
 
   try {
