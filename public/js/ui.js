@@ -321,7 +321,8 @@ export function studio(state) {
     );
 
   return `
-    <div class="studio studio-v3">
+    <div class="studio-intro"><div><span class="kicker">AI EVALUATION STUDIO</span><h2>Evaluate interactions with AI</h2><p>Import conversations and turn them into evidence-linked quality intelligence.</p></div><div class="studio-trust studio-trust-head"><span class="studio-trust-icon">✓</span><span>Evidence validated · Accurate · Scalable</span></div></div>
+    <div class="studio studio-v3 studio-v4">
       <div class="studio-intake-column">
         <section class="panel studio-intake-panel">
           <div class="panel-heading">
@@ -330,10 +331,10 @@ export function studio(state) {
                 01 / INTERACTION INTAKE
               </span>
 
-              <h3>Evaluate interactions with AI</h3>
+              <h3>Choose your interaction source</h3>
             </div>
 
-            <span class="tag">MULTI-AGENT FILE</span>
+            <span class="tag">AUTO-IMPORT ENABLED</span>
           </div>
 
           <div class="studio-intake-grid">
@@ -520,10 +521,18 @@ export function studio(state) {
           </div>
         </section>
       </div>
-
-      <div>
+      <div class="studio-evaluator-row">
+        <div class="studio-evaluator-main">
         ${aiPanel(phase, message)}
-
+        </div>
+        <div class="studio-evaluator-side">
+          <div class="studio-trust"><span class="studio-trust-icon">✓</span><div><strong>Evidence validated · Accurate · Scalable</strong><small>Evidence-led quality intelligence</small></div></div>
+          <section class="studio-eval-details panel">
+            <div class="kicker">EVALUATION DETAILS</div>
+            <dl><div><dt>Rubric</dt><dd>${esc(state.rubric.name || "SHARE QA Rubric")} · Rev ${esc(state.rubric.revision)}</dd></div>
+            <div><dt>Interactions</dt><dd>${calls.length}</dd></div>
+            <div><dt>Status</dt><dd>${running?"In progress":done?"Last cycle complete":"Ready"}</dd></div></dl>
+          </section>
         <section class="panel">
           <div class="panel-heading">
             <div>
@@ -570,6 +579,116 @@ export function studio(state) {
           </div>
         </section>
 
+        </div>
+      </div>
+      <div class="studio-queue-row">
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="kicker">
+                02 / EVALUATION QUEUE
+              </span>
+
+              <h3>
+                Conversations
+                <span class="counter">
+                  ${calls.length}
+                </span>
+              </h3>
+            </div>
+
+            <span class="muted">
+              ${count(calls, "DUPLICATE")} duplicates
+              · ${failures} errors
+            </span>
+          </div>
+
+          <div class="filters">
+            <input
+              id="search"
+              placeholder="Search agent or interaction ID"
+              value="${esc(search)}">
+
+            <select id="filter">
+              <option value="">All agents</option>
+
+              ${[
+                ...new Set(
+                  calls.map(c => c.agent)
+                )
+              ].map(agent => `
+                <option
+                  value="${esc(agent)}"
+                  ${agent === agentFilter
+                    ? "selected" : ""}>
+                  ${esc(agent)}
+                </option>
+              `).join("")}
+            </select>
+          </div>
+
+          <div class="table-scroll queue">
+            <table>
+              <thead>
+                <tr>
+                  <th>AGENT / INTERACTION</th>
+                  <th>DURATION</th>
+                  <th>QA</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${calls.map(c => `
+                  <tr
+                    class="call-row ${
+                      c.key === selected
+                        ? "selected" : ""
+                    }"
+                    data-call="${esc(c.key)}"
+                    data-search="${esc(
+                      (
+                        c.agent + " " + c.id
+                      ).toLowerCase()
+                    )}"
+                    data-agentname="${esc(c.agent)}">
+
+                    <td>
+                      <b>${esc(c.agent)}</b>
+                      <small>
+                        ${esc(c.id || c.key)}
+                      </small>
+                    </td>
+
+                    <td>
+                      ${esc(c.duration || "—")}
+                    </td>
+
+                    <td>
+                      <b>${fmt(c.score?.score)}</b>
+                      <small>
+                        Cov. ${fmt(c.score?.coverage)}
+                      </small>
+                    </td>
+
+                    <td>
+                      ${chip(c.status)}
+                    </td>
+                  </tr>
+                `).join("") || `
+                  <tr>
+                    <td colspan="4" class="empty">
+                      Upload a transcript file to
+                      populate this queue.
+                    </td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div class="studio-hint-row">
         <section class="panel hint">
           <span class="kicker">QA SCORING</span>
 
@@ -586,9 +705,8 @@ export function studio(state) {
           </p>
         </section>
       </div>
-    </div>
 
-    <section class="panel" id="call-detail">
+    <section class="panel studio-results" id="call-detail">
       ${callDetail(
         calls.find(c => c.key === selected),
         state.rubric
