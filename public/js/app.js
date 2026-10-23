@@ -280,8 +280,9 @@ function load(text, filename) {
   state.message = "";
   state.importFeedback = "";
   const notice = $("#notice");
-  if (notice && !notice.classList.contains("error-note")) {
+  if (notice) {
     notice.textContent = "";
+    notice.className = "notice";
   }
 
   // Save only after any manual speaker mapping has completed.
