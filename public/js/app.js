@@ -50,6 +50,7 @@ const state = {
   search: "",
   importFeedback: "",
   pasteDraft: "",
+  resultTab: "scorecard",
 
   rubric: loadRubric(),
 
@@ -636,6 +637,12 @@ root.addEventListener("click", event => {
   );
 
   if (!button) return;
+
+  if (button.dataset.resultTab) {
+    state.resultTab = button.dataset.resultTab;
+    render();
+    return;
+  }
 
   if (button.dataset.pageGo) {
     navigate(button.dataset.pageGo);
