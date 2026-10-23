@@ -252,13 +252,13 @@ function aiPanel(phase, message) {
 
       <div class="ai-panel-head">
         <span>✦ QUALIS EVALUATOR</span>
-        <span>GEMINI · LIVE</span>
+        <span>EVIDENCE-LED QA</span>
       </div>
 
       <div class="orb-field">
         <div class="ring ring-one"></div>
         <div class="ring ring-two"></div>
-        <div class="orb">✦</div>
+        <div class="orb">Q</div>
         <span class="spark"></span>
       </div>
 
@@ -321,53 +321,46 @@ export function studio(state) {
     );
 
   return `
-    <div class="studio">
-      <div>
-        <section class="panel">
+    <div class="studio studio-v3">
+      <div class="studio-intake-column">
+        <section class="panel studio-intake-panel">
           <div class="panel-heading">
             <div>
               <span class="kicker">
                 01 / INTERACTION INTAKE
               </span>
 
-              <h3>Upload Genesys conversations</h3>
+              <h3>Evaluate interactions with AI</h3>
             </div>
 
             <span class="tag">MULTI-AGENT FILE</span>
           </div>
 
-          <label class="upload" for="file">
-            <span>⇧</span>
-            <b>Choose one transcript export</b>
-
-            <small>
-              TXT / TSV / CSV / JSON / SRT /
-              VTT / MD · speaker-labelled
-            </small>
-
-            <em>Browse file →</em>
-          </label>
-
-          <input
-            id="file"
-            type="file"
-            accept=".txt,.tsv,.csv,.json,.srt,.vtt,.md,.log"
-            hidden
-            ${running ? "disabled" : ""}>
-
-          <div class="paste-expander">
-            <details>
-              <summary>
-                Or paste a speaker-labelled transcript
-              </summary>
-
-              <textarea id="paste" rows="6"
-                placeholder="Agent: Hello, welcome to SHARE.
-Customer: I need help with points.">${esc(state.pasteDraft || "")}</textarea>
-
-              <p class="muted qa-auto-import-hint">Paste a transcript to import automatically. Then choose Evaluate all or Evaluate selected.</p>
+          <div class="studio-intake-grid">
+            <div class="intake-tile intake-paste">
+              <div class="intake-tile-heading"><span class="intake-step">01</span><strong>Paste transcript</strong></div>
+              <details class="paste-expander" open>
+                <summary>Paste a speaker-labelled transcript · expand / collapse</summary>
+                <textarea id="paste" rows="5" placeholder="Paste a Genesys transcript with speaker labels and timestamps…">${esc(state.pasteDraft || "")}</textarea>
+              </details>
+              <small>Automatically imports valid pasted transcripts</small>
               <p id="import-feedback" class="muted" role="status" aria-live="polite">${esc(state.importFeedback || "")}</p>
-            </details>
+            </div>
+            <div class="intake-tile intake-file">
+              <div class="intake-tile-heading"><span class="intake-step">02</span><strong>Upload transcript</strong></div>
+              <label class="upload" for="file">
+                <span>⇧</span><b>Browse transcript file</b>
+                <small>TXT · TSV · CSV · JSON · SRT · VTT · MD</small>
+              </label>
+              <input id="file" type="file" accept=".txt,.tsv,.csv,.json,.srt,.vtt,.md,.log" hidden ${running ? "disabled" : ""}>
+            </div>
+            <div class="intake-tile intake-audio">
+              <div class="intake-tile-heading"><span class="intake-step">03</span><strong>Audio file</strong></div>
+              <div class="upload audio-coming-soon">
+                <span>♫</span><b>Audio intake · upcoming</b>
+                <small>Not enabled in this prototype. Use a transcript export.</small>
+              </div>
+            </div>
           </div>
 
           <div class="toolbar">
@@ -393,12 +386,12 @@ Customer: I need help with points.">${esc(state.pasteDraft || "")}</textarea>
             <button class="secondary"
               id="stopAfter"
               ${running ? "" : "disabled"}>
-              Stop after current interaction
+              Finish current & stop
             </button>
             <button class="secondary"
               id="stop"
               ${running ? "" : "disabled"}>
-              Stop now
+              Stop evaluation
             </button>
 
             <button class="secondary"
@@ -586,7 +579,7 @@ Customer: I need help with points.">${esc(state.pasteDraft || "")}</textarea>
           </h3>
 
           <p>
-            Gemini checks rubric behaviours.
+            The model checks rubric behaviours.
             Qualis calculates criterion scores
             using fixed checkpoint rules.
             Missing evidence stays unscored.
