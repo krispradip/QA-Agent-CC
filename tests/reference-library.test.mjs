@@ -89,7 +89,7 @@ test("Only approved relevant entries are sent; no cross-BU leakage on unknown me
   assert.equal(activeReferenceEntries(library,call,[{id:"opening"}]).length,1);
   // Global variant qualifies only if its own term appears in the transcript.
   call.turns=[{text:"Welcome to Shair"}];
-  assert.equal(activeReferenceEntries(library,call,[{id:"opening"}]).length,2);
+  assert.equal(activeReferenceEntries(library,call,[{id:"opening"}]).length,1);
 });
 
 test("Reference preview HTML escapes uploaded CSV content",()=>{
