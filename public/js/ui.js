@@ -497,10 +497,13 @@ export function studio(state) {
               </h3>
             </div>
 
-            <span class="muted">
-              ${count(calls, "DUPLICATE")} duplicates
-              · ${failures} errors
-            </span>
+            <div class="studio-queue-actions">
+              <span class="muted">
+                ${count(calls, "DUPLICATE")} duplicates
+                · ${failures} errors
+              </span>
+              <button type="button" class="primary studio-open-reports" data-page-go="agents">Open Agents &amp; Reports →</button>
+            </div>
           </div>
 
           <div class="filters">
@@ -554,10 +557,18 @@ export function studio(state) {
                     data-agentname="${esc(c.agent)}">
 
                     <td>
-                      <b>${esc(c.agent)}</b>
-                      <small>
-                        ${esc(c.id || c.key)}
-                      </small>
+                      <div class="studio-queue-agent">
+                        <span class="studio-agent-identity">
+                          <b>${esc(c.agent)}</b>
+                          <small>${esc(c.id || c.key)}</small>
+                        </span>
+                        <button type="button" class="secondary studio-inspect-assessment"
+                          data-open="${esc(c.key)}"
+                          ${c.status === "COMPLETE" && c.findings?.length ? "" : "disabled"}
+                          aria-label="Inspect assessment for ${esc(c.agent)}">
+                          Inspect assessment →
+                        </button>
+                      </div>
                     </td>
 
                     <td>
@@ -607,21 +618,7 @@ export function studio(state) {
       </div>
     </div>
 
-    <section class="panel studio-results" id="call-detail">
-      <div class="panel-heading">
-        <div><span class="kicker">ASSESSMENT WORKFLOW</span><h3>Evaluation outcomes</h3>
-          <p class="muted">Full QA rubric results, evidence, and missed checkpoints are available in Agents &amp; Reports.</p>
-        </div>
-        <button type="button" class="primary" data-page-go="agents">Open Agents &amp; Reports →</button>
-      </div>
-      ${calls.find(c => c.key === selected) ? `
-        <p><strong>${esc(calls.find(c => c.key === selected).agent)}</strong> · ${esc(calls.find(c => c.key === selected).id || selected)}
-        · ${chip(calls.find(c => c.key === selected).status)}
-        · QA ${fmt(calls.find(c => c.key === selected).score?.score)}
-        · Coverage ${fmt(calls.find(c => c.key === selected).score?.coverage)}</p>
-        <button class="secondary" data-open="${esc(selected)}">Inspect assessment →</button>
-      ` : '<p class="muted">Select an interaction to see its processing summary.</p>'}
-    </section>
+
   `;
 }
 
