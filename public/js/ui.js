@@ -257,7 +257,7 @@ function aiPanel(phase, message) {
         <div class="qmf-orbit qmf-orbit-mid"></div>
         <div class="qmf-orbit qmf-orbit-inner"></div>
         <div class="qmf-core-shell">
-          <div class="qmf-core"><span>AI</span></div>
+          <div class="qmf-core"><span>QAMAFer<span class="qmf-core-suffix">.AI</span></span></div>
         </div>
         <span class="qmf-spark qmf-spark-a">✧</span>
         <span class="qmf-spark qmf-spark-b">✦</span>
@@ -601,7 +601,8 @@ export function studio(state) {
     <section class="panel studio-results" id="call-detail">
       ${callDetail(
         calls.find(c => c.key === selected),
-        state.rubric
+        state.rubric,
+        state.resultTab || "scorecard"
       )}
     </section>
   `;
@@ -611,7 +612,7 @@ export function studio(state) {
  * QA-UI-CALL-DETAIL
  * Transcript and evidence-linked parameter assessments.
  */
-export function callDetail(call, rubric) {
+export function callDetail(call, rubric, tab = "scorecard") {
   if (!call) {
     return `
       <div class="empty">
@@ -632,48 +633,93 @@ export function callDetail(call, rubric) {
   );
 
   const results = call.findings || [];
+  const validTabs = ["scorecard","transcript","timeline","insights"];
+  if (!validTabs.includes(tab)) tab = "scorecard";
+  const complete = call.status === "COMPLETE";
+  const groupScores = [...new Set(results.map(f => names.get(f.id)?.group || "Other"))].map(group => {
+    const members = results.filter(f => (names.get(f.id)?.group || "Other") === group);
+    const scored = members.filter(f => f.status === "SCORED" && Number.isFinite(f.score));
+    const average = scored.length ? Math.round(scored.reduce((sum,f)=>sum+f.score,0)/scored.length) : null;
+    return {group,average,count:members.length};
+  });
+  const anchors = results.flatMap(f => (f.anchors || []).map(a=>({
+    ...a, group:names.get(f.id)?.group || "QA", criterion:names.get(f.id)?.name || f.id
+  })));
+  const known = anchors.filter(a => a.state === "MET" || a.state === "MISSED");
+  const met = known.filter(a => a.state === "MET").length;
+  const missed = known.filter(a => a.state === "MISSED").length;
+  const unknown = anchors.filter(a => a.state === "UNKNOWN").length;
+  const notApplicable = anchors.filter(a => a.state === "NA").length;
+  const highlights = [
+    ...anchors.filter(a=>a.state==="MET" && a.evidence?.length).slice(0,3).map(a=>({
+      kind:"positive",title:a.criterion,text:a.text
+    })),
+    ...anchors.filter(a=>a.state==="MISSED" && a.evidence?.length).slice(0,3).map(a=>({
+      kind:"improvement",title:a.criterion,text:a.text
+    })),
+    ...anchors.filter(a=>a.state==="UNKNOWN").slice(0,2).map(a=>({
+      kind:"unknown",title:a.criterion,text:a.text+" — insufficient evidence"
+    }))
+  ];
+  const transcriptMarkup = `
+    <div class="scroller qmf-transcript-stream">
+      ${call.turns.map(t => `
+        <article class="turn ${esc(t.speaker)}">
+          <div><b>${t.speaker==="agent"?"AGENT":t.speaker==="customer"?"CUSTOMER":"UNMAPPED"}</b>
+            <small>${esc(t.timestamp || "—")} · #${t.line}</small></div>
+          <p dir="auto">${esc(t.text)}</p>
+        </article>
+      `).join("") || '<p class="empty">No transcript available.</p>'}
+    </div>`;
 
   return `
-    <div class="panel-heading">
-      <div>
-        <span class="kicker">
-          03 / CALL EVIDENCE
-        </span>
-
-        <h3>
-          ${esc(call.agent)} ·
-          ${esc(call.id || call.key)}
-        </h3>
-
-        <p class="muted">
-          ${esc(
-            call.duration || "Duration unavailable"
-          )}
-          · ${esc(call.type || "Call")}
-          ·
-          ${call.meta
-            ? `Rubric revision ${
-                call.meta.rubricRevision
-              } · ${esc(call.meta.model)}`
-            : "Not yet evaluated"}
-        </p>
+    <div class="panel-heading qmf-results-heading">
+      <div><span class="kicker">QUALITY INTELLIGENCE</span>
+        <h3>Evaluation Results</h3>
+        <p class="muted">${esc(call.agent)} · ${esc(call.id || call.key)} · ${esc(call.duration || "Duration unavailable")} · ${chip(call.status)}</p>
       </div>
-
-      <div class="score-group">
-        <div>
-          <small>QA SCORE</small>
-          <b>${fmt(call.score?.score)}</b>
-        </div>
-
-        <div>
-          <small>COVERAGE</small>
-          <b>${fmt(call.score?.coverage)}</b>
-        </div>
-
-        ${chip(call.status)}
-      </div>
+      <div class="qmf-result-head-score"><span>QA Score</span><strong>${fmt(call.score?.score)}</strong><small>Coverage ${fmt(call.score?.coverage)}</small></div>
     </div>
-
+    <div class="qmf-result-tabs" role="tablist" aria-label="Evaluation result views">
+      ${[["scorecard","Scorecard"],["transcript","Transcript"],["timeline","Agent timeline"],["insights","Key insights"]].map(([id,label])=>`
+        <button type="button" role="tab" aria-selected="${tab===id}" class="${tab===id?"active":""}" data-result-tab="${id}">${label}</button>
+      `).join("")}
+    </div>
+    ${tab==="scorecard" ? `
+      <div class="qmf-results-overview">
+        <section class="qmf-score-tile">
+          <small>Overall QA Score</small>
+          <div class="qmf-score-ring" style="--qmf-score:${Math.max(0,Math.min(100,call.score?.score ?? 0))}%">
+            <strong>${fmt(call.score?.score)}</strong>
+          </div>
+          <span>Evidence coverage ${fmt(call.score?.coverage)}</span>
+        </section>
+        <section class="qmf-competency-tile">
+          <small>Core competencies</small>
+          ${groupScores.map(item=>`<div class="qmf-competency-row">
+            <span>${esc(item.group)}</span>
+            <div class="qmf-competency-track"><i style="width:${item.average ?? 0}%"></i></div>
+            <strong>${item.average===null?"—":fmt(item.average)}</strong>
+          </div>`).join("") || '<p class="muted">No scored criteria yet.</p>'}
+        </section>
+        <section class="qmf-insight-tile">
+          <small>Key insights · evaluated evidence</small>
+          ${highlights.slice(0,3).map(h=>`<div class="qmf-highlight ${h.kind}"><span>${h.kind==="positive"?"✓":h.kind==="improvement"?"!":"?"}</span><p><b>${esc(h.title)}</b> · ${esc(h.text)}</p></div>`).join("") || '<p class="muted">Insights appear when evidence has been assessed.</p>'}
+        </section>
+      </div>
+      <div class="qmf-anchor-counts"><span>✓ ${met} MET</span><span>× ${missed} MISSED</span><span>? ${unknown} UNKNOWN</span><span>— ${notApplicable} NA</span></div>
+    ` : ""}
+    ${tab==="transcript" ? `<div class="qmf-tab-content"><h4>Interaction transcript · ${call.turns.length} turns</h4>${transcriptMarkup}</div>` : ""}
+    ${tab==="timeline" ? `<div class="qmf-tab-content"><h4>Agent timeline · timestamped conversation</h4>
+      <p class="muted">Transcript events only. Audio playback and Genesys operational events are not available here.</p>
+      <div class="qmf-timeline">${call.turns.map(t=>`<div class="qmf-timeline-event"><time>${esc(t.timestamp || "—")}</time>
+      <span class="qmf-timeline-dot ${esc(t.speaker)}"></span>
+      <div><b>${t.speaker==="agent"?"Agent":t.speaker==="customer"?"Customer":"Unmapped"}</b><p dir="auto">${esc(t.text)}</p></div></div>`).join("")}</div></div>` : ""}
+    ${tab==="insights" ? `<div class="qmf-tab-content"><h4>Evidence-based findings</h4>
+      <p class="muted">Generated from the validated rubric results, not a separate speculative summary.</p>
+      ${highlights.map(h=>`<div class="qmf-insight-detail ${h.kind}"><b>${esc(h.title)}</b><p>${esc(h.text)}</p></div>`).join("") || '<p class="muted">Evaluate an interaction to generate insights.</p>'}
+    </div>` : ""}
+    ${tab==="scorecard" ? `
     ${renderScoreExplanation(call)}
     ${(() => { const x = coverageBreakdown(call, { criteria: call.meta?.criteria?.map(c => ({ ...c, mode: rubric.criteria.find(r => r.id === c.id)?.mode, enabled: true })) || rubric.criteria }); if (!x) return ""; return `<details class="qa-call-explainer" open><summary><strong>Why was coverage limited?</strong><span>Evidence gaps and requirements</span></summary>${x.groups.map(g=>`<div class="qa-coverage-reason"><b>${esc(g.title)} — ${g.percentOfApplicable}% of applicable rubric weight</b>${g.criteria.map(c=>`<p><strong>${esc(criterionLabel(c,rubric))}</strong>: ${esc(c.reason)}</p>`).join("")}</div>`).join("") || "<p>No unverified criteria in this rubric.</p>"}<p class="muted">${x.notApplicable} criteria marked Not Applicable and excluded.</p></details>`; })()}
 
@@ -685,47 +731,7 @@ export function callDetail(call, rubric) {
       </div>
     ` : ""}
 
-    <div class="evidence-grid">
-      <div>
-        <div class="minor-title">
-          Transcript
-          <small>
-            ${call.turns.length} turns
-          </small>
-        </div>
-
-        <div class="scroller">
-          ${call.turns.map(t => `
-            <article class="turn ${esc(t.speaker)}">
-              <div>
-                <b>
-                  ${
-                    t.speaker === "agent"
-                      ? "AGENT"
-                      : t.speaker === "customer"
-                        ? "CUSTOMER"
-                        : "UNMAPPED"
-                  }
-                </b>
-
-                <small>
-                  ${esc(t.timestamp || "—")}
-                  · #${t.line}
-                </small>
-              </div>
-
-              <p dir="auto">
-                ${esc(t.text)}
-              </p>
-            </article>
-          `).join("") || `
-            <div class="empty">
-              No transcript.
-            </div>
-          `}
-        </div>
-      </div>
-
+    <div class="qmf-rubric-panel">
       <div>
         <div class="minor-title">
           QA rubric
@@ -811,6 +817,7 @@ export function callDetail(call, rubric) {
         </div>
       </div>
     </div>
+    ` : ""}
   `;
 }
 
