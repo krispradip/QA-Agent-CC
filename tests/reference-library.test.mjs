@@ -41,7 +41,7 @@ test("Malformed headers, absent values and excessive cells are rejected",()=>{
   assert.throws(()=>parseReferenceCsv("canonical,variant\nSHARE,","phonetic"),/empty required/);
   assert.throws(()=>parseReferenceCsv("canonical,canonical,variant\na,b,c","phonetic"),/Duplicate/);
   assert.throws(()=>parseReferenceCsv("canonical,variant,secret\na,b,c","phonetic"),/Unexpected/);
-  assert.throws(()=>parseReferenceCsv('canonical,variant\na,"unclosed',"',"phonetic"),/Unexpected|unclosed/);
+  assert.throws(()=>parseReferenceCsv('canonical,variant\na,"unclosed','phonetic'),/unclosed/);
   assert.throws(()=>parseReferenceCsv("canonical,variant\nSHARE,Shair,extra","phonetic"),/columns/);
 });
 
