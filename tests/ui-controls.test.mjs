@@ -68,3 +68,18 @@ test("Evaluation Studio keeps assessment actions within each conversation and re
   assert.match(pendingButton,/disabled/);
   assert.equal((html.match(/data-page-go="agents"/g)||[]).length,1);
 });
+
+test("Successful import does not reserve an intake feedback row or reproduce duplicate-count banner", () => {
+  const rubric=defaultRubric();
+  const html=studio({
+    calls:[{key:"imported:1",id:"sample-1",agent:"Sample Agent",status:"READY",
+      duration:"01:00",findings:[],score:null}],
+    selected:"imported:1",running:false,stopAfterCurrent:false,phase:"idle",
+    message:"",importFeedback:"",search:"",agentFilter:"",rubric
+  });
+  assert.doesNotMatch(html,/Select Evaluate to start assessment/);
+  assert.doesNotMatch(html,/1 new · 0 existing/);
+  assert.match(html,/id="import-feedback"[^>]*><\\/p>/);
+  assert.match(html,/id="ai-stage" class="qmf-stage"><\\/p>/);
+  assert.match(html,/Conversations/);
+});
