@@ -304,21 +304,17 @@ function paintProgress() {
     ? "~"+format(Math.ceil(seconds/p.completed*(p.total-p.completed)))
     : p.completed===p.total ? "00:00" : "Calculating…";
 }
-async function run(all) {
+async function run(scope = "ready") {
   if (state.running) return;
 
-  const target = all
-    ? state.calls.filter(
-        c => c.status === "READY"
-      )
-    : [
-        state.calls.find(
-          c => c.key === state.selected
-        )
-      ].filter(c =>
-        c &&
-        ["READY", "ERROR", "COMPLETE"].includes(c.status)
-      );
+  const evaluable = c => c && ["READY", "ERROR", "COMPLETE"].includes(c.status);
+  const target = scope === "all"
+    ? state.calls.filter(evaluable)
+    : scope === "agent"
+      ? state.calls.filter(c => c.agent === state.agentFilter && evaluable(c))
+      : scope === "selected"
+        ? [state.calls.find(c => c.key === state.selected)].filter(evaluable)
+        : state.calls.filter(c => c.status === "READY");
 
   if (!target.length) {
     notify("No evaluable interaction selected. Check the import status and speaker mapping.", true);
@@ -347,6 +343,15 @@ async function run(all) {
         break;
       }
 
+      // Preserve an immutable comparison snapshot before replacing assessment results.
+      const previous = call.status === "COMPLETE" && call.findings?.length
+        ? { evaluatedAt: call.evaluatedAt || null, score: clone(call.score),
+            findings: clone(call.findings), meta: clone(call.meta),
+            rubricRevision: call.meta?.rubricRevision ?? null }
+        : null;
+      if (previous) {
+        call.assessmentHistory = [...(call.assessmentHistory || []), previous].slice(-20);
+      }
       call.status = "READY";
       call.error = "";
       call.findings = [];
@@ -392,6 +397,7 @@ async function run(all) {
         }
       }
 
+      if (call.status === "COMPLETE") call.evaluatedAt = new Date().toISOString();
       state.evalProgress.completed++;
       await persist();
       render();
@@ -714,12 +720,21 @@ root.addEventListener("click", event => {
   }
 
   if (button.id === "all") {
-    run(true);
+    run("ready");
     return;
   }
 
   if (button.id === "one") {
-    run(false);
+    run("selected");
+    return;
+  }
+
+  if (button.id === "rerunAll") {
+    if (confirm("Reassess every evaluable interaction? Previous completed assessments will be retained for comparison.")) run("all");
+    return;
+  }
+  if (button.id === "rerunAgent") {
+    if (state.agentFilter && confirm("Reassess all evaluable interactions for " + state.agentFilter + "? Previous completed assessments will be retained.")) run("agent");
     return;
   }
 
