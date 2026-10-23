@@ -360,12 +360,15 @@ export function defaultRubric() {
     model: "gemini-3.5-flash-lite",
 
     instructions:
-      "Identify only observable behaviours, cite exact dialogue turns, " +
-      "be objective, recognise Arabic/English and ASR noise. " +
-      "Do not assume CRM actions or unknown policy.",
+      "Evaluate the configured checkpoint meaning, not literal keyword spelling. " +
+      "Accept plausible Arabic/English phonetic or ASR renderings only when " +
+      "the surrounding dialogue clearly supports the same intended behaviour. " +
+      "For example SHARE may be transcribed as a similar-sounding word; " +
+      "require contextual evidence of the brand, not phonetic similarity alone. " +
+      "Do not invent dialogue, CRM events, audio or policy. Cite supporting turns.",
 
     rules: {
-      deterministic: DETERMINISTIC_RULES.map(r => ({ id:r.id, enabled:r.enabled, value:r.value })),
+      deterministic: DETERMINISTIC_RULES.map(r => ({ id:r.id, enabled:r.enabled, value:r.value, operator: ["greeting_time","fallback_greeting"].includes(r.id)?"<=": ["mandatory_greeting","mandatory_disclosure","closing_statement","verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"].includes(r.id)?">=":"<=" })),
       greet7: 7,
       greet10: 10,
 
@@ -453,7 +456,8 @@ export function loadRubric() {
           const savedRule = Array.isArray(saved.rules?.deterministic)
             ? saved.rules.deterministic.find(x => x.id === def.id) : null;
           return { id:def.id, enabled:typeof savedRule?.enabled === "boolean" ? savedRule.enabled : def.enabled,
-            value:Number.isFinite(savedRule?.value) && savedRule.value >= 0 ? savedRule.value : def.value };
+            value:Number.isFinite(savedRule?.value) && savedRule.value >= 0 ? savedRule.value : def.value,
+            operator:[">=",">","<=","<","==","!="].includes(savedRule?.operator)?savedRule.operator:(["mandatory_greeting","mandatory_disclosure","closing_statement","verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"].includes(def.id)?">=":"<=") };
         })
       },
 
