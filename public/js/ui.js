@@ -363,7 +363,7 @@ export function studio(state) {
             <button class="primary"
               id="all"
               ${ready && !running ? "" : "disabled"}>
-              ✦ Evaluate all (${ready})
+              ${message?.startsWith("Stopped —") ? "▶ Resume pending" : "✦ Evaluate all"} (${ready})
             </button>
 
             <button class="secondary" id="rerunAll"
@@ -427,7 +427,7 @@ export function studio(state) {
             <div class="kicker">EVALUATION DETAILS</div>
             <dl><div><dt>Rubric</dt><dd>${esc(state.rubric.name || "SHARE QA Rubric")} · Rev ${esc(state.rubric.revision)}</dd></div>
             <div><dt>Interactions</dt><dd>${calls.length}</dd></div>
-            <div><dt>Status</dt><dd>${running?"In progress":done?"Last cycle complete":"Ready"}</dd></div></dl>
+            <div><dt>Status</dt><dd>${running?(state.stopAfterCurrent?"Stopping after current":"In progress"):ready?(message?.startsWith("Stopped —")?"Stopped · ":"Ready · ")+ready+" pending":done?"Last cycle complete":"Ready"}</dd></div></dl>
           </section>
         <section class="panel">
           <div class="panel-heading">
