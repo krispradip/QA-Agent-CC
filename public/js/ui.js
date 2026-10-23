@@ -600,6 +600,7 @@ export function studio(state) {
           </p>
         </section>
       </div>
+    </div>
 
     <section class="panel studio-results" id="call-detail">
       ${callDetail(
