@@ -514,12 +514,11 @@ conversation segment demonstrates that omission.
 
 Understand Arabic, English, code-switching and realistic speech-to-text errors.
 Apply the business-configured criterion, checkpoint and evaluator instructions.
-Judge the intended observable behaviour, not an exact spelling test. An invitation
+Judge the intended observable behaviour, not an exact spelling test unless
+the configured requirement explicitly demands exact wording. An invitation
 such as "Can I help you?" or its natural-language equivalent satisfies an
 invitation-to-explain checkpoint when the customer is invited to state their issue;
 this does not by itself prove brand identification or agent identity.
-Unless
-the configured requirement explicitly demands exact wording.
 When the checkpoint requires a brand mention such as SHARE, accept a credible
 phonetic or ASR rendering only if the cited surrounding dialogue makes the
 brand reference clear. Similar sound without relevant context is insufficient.
