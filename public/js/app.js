@@ -526,7 +526,7 @@ function download(kind) {
       calls: state.calls
     }, null, 2);
 
-    name = "qamafer-ai-full-assessments.json";
+    name = "QA.MAFer.AI-full-assessments.json";
     type = "application/json";
 
   } else {
@@ -553,7 +553,7 @@ function download(kind) {
     }
 
     content = csv(rows);
-    name = "qamafer-ai-call-summary.csv";
+    name = "QA.MAFer.AI-call-summary.csv";
     type = "text/csv";
   }
 
