@@ -238,44 +238,40 @@ export function overview(calls, rubric, selectedAgent = "", period = { mode:"all
  * Visual processing state tied to real workflow events.
  */
 function aiPanel(phase, message) {
-  const active = [
-    "rules",
-    "ai",
-    "validating",
-    "loading"
-  ].includes(phase);
-
+  const active = ["rules", "ai", "validating", "loading"].includes(phase);
+  const failure = phase === "error";
+  const subtitle = active
+    ? "Tracing evidence and evaluating against your QA rubric"
+    : failure ? "Review the processing error and retry"
+    : "Your quality intelligence engine is ready";
   return `
-    <div class="ai-panel
-      ${active ? "active" : ""}
-      ${phase === "error" ? "error" : ""}">
-
+    <section class="ai-panel qmf-evaluator ${active ? "active qmf-processing" : "qmf-ready"} ${failure ? "error" : ""}" aria-label="QAMAFer.AI evaluator">
       <div class="ai-panel-head">
-        <span>✦ QUALIS EVALUATOR</span>
-        <span>EVIDENCE-LED QA</span>
+        <span class="qmf-eval-brand"><span class="qmf-eval-star">✦</span> QAMAFer.AI EVALUATOR</span>
+        <span class="qmf-engine-pill"><span class="qmf-live-dot"></span>${active ? "PROCESSING" : failure ? "ATTENTION REQUIRED" : "READY"}</span>
       </div>
-
-      <div class="orb-field">
-        <div class="ring ring-one"></div>
-        <div class="ring ring-two"></div>
-        <div class="orb">Q</div>
-        <span class="spark"></span>
+      <div class="qmf-eval-visual" aria-hidden="true">
+        <div class="qmf-energy-waves qmf-wave-one"></div>
+        <div class="qmf-energy-waves qmf-wave-two"></div>
+        <div class="qmf-orbit qmf-orbit-outer"><i></i><i></i><i></i></div>
+        <div class="qmf-orbit qmf-orbit-mid"></div>
+        <div class="qmf-orbit qmf-orbit-inner"></div>
+        <div class="qmf-core-shell">
+          <div class="qmf-core"><span>AI</span></div>
+        </div>
+        <span class="qmf-spark qmf-spark-a">✧</span>
+        <span class="qmf-spark qmf-spark-b">✦</span>
+        <span class="qmf-spark qmf-spark-c">✧</span>
       </div>
-
-      <h3>
-        ${active
-          ? "Analysing interaction"
-          : "Ready to evaluate"}
-      </h3>
-
-      <p id="ai-stage">${esc(message)}</p>
-
-      <div class="ai-steps">
-        <span>01 Ingest</span>
-        <span>02 Observe</span>
-        <span>03 Score</span>
+      <div class="qmf-eval-copy">
+        <h3>${active ? "Analysing your interaction…" : failure ? "Evaluation needs attention" : "Ready to process"}</h3>
+        <p>${subtitle}</p>
+        <p id="ai-stage" class="qmf-stage">${esc(message)}</p>
       </div>
-    </div>
+      <div class="qmf-eval-footer">
+        <span>✧ Understands context</span><span>◈ Validates evidence</span><span>▥ Scores consistently</span>
+      </div>
+    </section>
   `;
 }
 
@@ -328,7 +324,7 @@ export function studio(state) {
           <div class="panel-heading">
             <div>
               <span class="kicker">
-                01 / INTERACTION INTAKE
+                INTERACTION INTAKE
               </span>
 
               <h3>Choose your interaction source</h3>
@@ -339,7 +335,7 @@ export function studio(state) {
 
           <div class="studio-intake-grid">
             <div class="intake-tile intake-paste">
-              <div class="intake-tile-heading"><span class="intake-step">01</span><strong>Paste transcript</strong></div>
+              <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">▤</span><strong>Paste transcript</strong></div>
               <details class="paste-expander" open>
                 <summary>Paste a speaker-labelled transcript · expand / collapse</summary>
                 <textarea id="paste" rows="5" placeholder="Paste a Genesys transcript with speaker labels and timestamps…">${esc(state.pasteDraft || "")}</textarea>
@@ -348,7 +344,7 @@ export function studio(state) {
               <p id="import-feedback" class="muted" role="status" aria-live="polite">${esc(state.importFeedback || "")}</p>
             </div>
             <div class="intake-tile intake-file">
-              <div class="intake-tile-heading"><span class="intake-step">02</span><strong>Upload transcript</strong></div>
+              <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">⇧</span><strong>Upload transcript</strong></div>
               <label class="upload" for="file">
                 <span>⇧</span><b>Browse transcript file</b>
                 <small>TXT · TSV · CSV · JSON · SRT · VTT · MD</small>
@@ -356,7 +352,7 @@ export function studio(state) {
               <input id="file" type="file" accept=".txt,.tsv,.csv,.json,.srt,.vtt,.md,.log" hidden ${running ? "disabled" : ""}>
             </div>
             <div class="intake-tile intake-audio">
-              <div class="intake-tile-heading"><span class="intake-step">03</span><strong>Audio file</strong></div>
+              <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">♫</span><strong>Audio file</strong></div>
               <div class="upload audio-coming-soon">
                 <span>♫</span><b>Audio intake · upcoming</b>
                 <small>Not enabled in this prototype. Use a transcript export.</small>
@@ -481,7 +477,7 @@ export function studio(state) {
           <div class="panel-heading">
             <div>
               <span class="kicker">
-                02 / EVALUATION QUEUE
+                EVALUATION QUEUE
               </span>
 
               <h3>
