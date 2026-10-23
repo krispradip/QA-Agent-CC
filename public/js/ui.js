@@ -599,11 +599,19 @@ export function studio(state) {
     </div>
 
     <section class="panel studio-results" id="call-detail">
-      ${callDetail(
-        calls.find(c => c.key === selected),
-        state.rubric,
-        state.resultTab || "scorecard"
-      )}
+      <div class="panel-heading">
+        <div><span class="kicker">ASSESSMENT WORKFLOW</span><h3>Evaluation outcomes</h3>
+          <p class="muted">Full QA rubric results, evidence, and missed checkpoints are available in Agents &amp; Reports.</p>
+        </div>
+        <button type="button" class="primary" data-page-go="agents">Open Agents &amp; Reports →</button>
+      </div>
+      ${calls.find(c => c.key === selected) ? `
+        <p><strong>${esc(calls.find(c => c.key === selected).agent)}</strong> · ${esc(calls.find(c => c.key === selected).id || selected)}
+        · ${chip(calls.find(c => c.key === selected).status)}
+        · QA ${fmt(calls.find(c => c.key === selected).score?.score)}
+        · Coverage ${fmt(calls.find(c => c.key === selected).score?.coverage)}</p>
+        <button class="secondary" data-open="${esc(selected)}">Inspect assessment →</button>
+      ` : '<p class="muted">Select an interaction to see its processing summary.</p>'}
     </section>
   `;
 }
@@ -827,7 +835,7 @@ export function callDetail(call, rubric, tab = "scorecard") {
  */
 export function agentsView(state) {
   const { calls, agentFilter } = state;
-
+  const inspected = calls.find(c => c.key === state.selected && (!agentFilter || c.agent === agentFilter));
   return `
     <section class="panel">
       <div class="panel-heading">
@@ -925,6 +933,16 @@ export function agentsView(state) {
         every imported call separately.
       </div>
     `}
+    ${inspected ? `
+      <section class="panel qa-agent-inspection" id="agent-inspection">
+        <div class="panel-heading"><div><span class="kicker">INTERACTION INSPECTION</span>
+          <h3>${esc(inspected.agent)} · ${esc(inspected.id || inspected.key)}</h3>
+          <p class="muted">Criterion-by-criterion rubric findings, met and missed checkpoints, verification and transcript evidence.</p>
+          <p class="muted">Assessment rubric revision: ${esc(inspected.meta?.rubricRevision ?? "Not recorded")}</p>
+        </div><button class="secondary" type="button" id="closeInspection">Close inspection ×</button></div>
+        ${callDetail(inspected, state.rubric, state.resultTab || "scorecard")}
+      </section>
+    ` : ""}
   `;
 }
 
