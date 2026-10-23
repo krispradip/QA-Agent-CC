@@ -1659,3 +1659,21 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .qmf-insight-detail p{color:#65759a;line-height:1.5}
 @media(max-width:1100px){.qmf-results-overview{grid-template-columns:1fr 1fr}.qmf-insight-tile{grid-column:1/-1}}
 @media(max-width:700px){.qmf-results-overview{grid-template-columns:1fr}.qmf-insight-tile{grid-column:auto}.qmf-result-head-score strong{font-size:21px}.qmf-result-tabs button{padding:10px}}
+
+/* QAMAFer.AI approved evaluator panel proportions — preview branch */
+.studio-v4 .studio-evaluator-row{grid-template-columns:minmax(0,1.9fr) minmax(280px,.95fr)}
+.studio-v4 .studio-evaluator-main .qmf-evaluator{min-height:395px!important;padding:20px 24px 18px!important}
+.studio-v4 .qmf-eval-visual{height:247px;width:min(100%,640px);margin-top:0}
+.studio-v4 .qmf-eval-visual .qmf-core-shell{width:175px;height:175px}
+.studio-v4 .qmf-eval-visual .qmf-orbit-inner{width:190px;height:190px}
+.studio-v4 .qmf-eval-visual .qmf-orbit-mid{width:213px;height:213px}
+.studio-v4 .qmf-eval-visual .qmf-orbit-outer{width:246px;height:246px}
+.studio-v4 .qmf-core>span{font-size:18px!important;letter-spacing:-.65px!important;white-space:nowrap}
+.studio-v4 .qmf-core .qmf-core-suffix{font-size:11px!important;letter-spacing:-.2px;vertical-align:baseline}
+.studio-v4 .qmf-eval-copy h3{font-size:22px!important}
+.studio-v4 .studio-evaluator-side{justify-content:center}
+@media(max-width:1060px){.studio-v4 .studio-evaluator-row{grid-template-columns:1fr}}
+@media(max-width:700px){
+ .studio-v4 .studio-evaluator-main .qmf-evaluator{min-height:340px!important;padding:14px!important}
+ .studio-v4 .qmf-eval-visual{height:195px;transform:scale(.78)}
+}
