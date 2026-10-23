@@ -55,6 +55,7 @@ const state = {
   rubric: loadRubric(),
 
   criterion: "greet7",
+  stopAfterCurrent: false,
   running: false,
   phase: "idle",
 
@@ -338,20 +339,24 @@ async function run(scope = "ready") {
 
   try {
     for (const call of target) {
-      if (state.controller.signal.aborted) {
+      if (state.controller.signal.aborted || state.stopAfterCurrent) {
         stopped = true;
         break;
       }
 
-      // Preserve an immutable comparison snapshot before replacing assessment results.
-      const previous = call.status === "COMPLETE" && call.findings?.length
-        ? { evaluatedAt: call.evaluatedAt || null, score: clone(call.score),
-            findings: clone(call.findings), meta: clone(call.meta),
-            rubricRevision: call.meta?.rubricRevision ?? null }
+      // Capture the pre-run assessment so an aborted re-evaluation can be
+      // rolled back without discarding a previously completed result.
+      const before = clone({
+        status: call.status, error: call.error || "",
+        findings: call.findings || [], score: call.score ?? null,
+        meta: call.meta ?? null, evaluatedAt: call.evaluatedAt ?? null,
+        assessmentHistory: call.assessmentHistory || []
+      });
+      const previous = before.status === "COMPLETE" && before.findings.length
+        ? { evaluatedAt: before.evaluatedAt, score: before.score,
+            findings: before.findings, meta: before.meta,
+            rubricRevision: before.meta?.rubricRevision ?? null }
         : null;
-      if (previous) {
-        call.assessmentHistory = [...(call.assessmentHistory || []), previous].slice(-20);
-      }
       call.status = "READY";
       call.error = "";
       call.findings = [];
@@ -370,11 +375,8 @@ async function run(scope = "ready") {
 
       } catch (err) {
         if (state.controller.signal.aborted) {
-          call.status = "READY";
-          call.error = "";
-          call.findings = [];
-          call.score = null;
-
+          // Hard stop must not destroy the old score during a reassessment.
+          Object.assign(call, before);
           stopped = true;
           break;
         }
@@ -397,7 +399,13 @@ async function run(scope = "ready") {
         }
       }
 
-      if (call.status === "COMPLETE") call.evaluatedAt = new Date().toISOString();
+      if (call.status === "COMPLETE") {
+        call.evaluatedAt = new Date().toISOString();
+        // Only append comparison history once the new evaluation succeeds.
+        if (previous) {
+          call.assessmentHistory = [...before.assessmentHistory, previous].slice(-20);
+        }
+      }
       state.evalProgress.completed++;
       await persist();
       render();
@@ -419,9 +427,12 @@ async function run(scope = "ready") {
     state.message = quota
       ? "Gemini quota reached; pending calls remain ready"
       : stopped
-        ? "Stopped — finished calls are retained"
+        ? "Stopped — completed results retained; pending interactions can be resumed with Evaluate all"
         : "Evaluation cycle finished — inspect results";
 
+    // Persist the stopped state as well as completed items, including
+    // restoration of any assessment interrupted during a reassessment.
+    await persist();
     render();
     paintProgress();
   }
@@ -739,8 +750,14 @@ root.addEventListener("click", event => {
   }
 
   if (button.id === "stopAfter") {
+    if (!state.running) return;
     state.stopAfterCurrent = true;
-    notify("Will stop after the current interaction completes.");
+    state.message = "Stop requested — finishing the current interaction; pending calls will not start";
+    // Update the button and progress area immediately so the request is visible
+    // while the in-flight Gemini request is still processing.
+    render();
+    paintProgress();
+    notify("Stop requested. The current assessment will finish; pending calls stay ready.");
     return;
   }
 
@@ -759,7 +776,9 @@ root.addEventListener("click", event => {
 
   if (button.dataset.criterion) {
     if (!captureCriterionDraft()) return;
-    state.criterion = button.dataset.criterion;
+    // Re-selecting the open parameter collapses its editor.
+    state.criterion = state.criterion === button.dataset.criterion
+      ? null : button.dataset.criterion;
     render();
     return;
   }
