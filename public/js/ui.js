@@ -317,16 +317,13 @@ export function studio(state) {
     );
 
   return `
-    <div class="studio studio-v3 studio-v4">
+    <div class="studio studio-v3 studio-v4 studio-v5">
+      <div class="studio-v5-dashboard">
       <div class="studio-intake-column">
         <section class="panel studio-intake-panel">
           <div class="panel-heading">
             <div>
-              <span class="kicker">
-                INTERACTION INTAKE
-              </span>
-
-              <h3>Choose your interaction source</h3>
+              <span class="kicker">Choose your interaction source</span>
             </div>
 
 
@@ -334,18 +331,21 @@ export function studio(state) {
 
           <div class="studio-intake-grid">
             <div class="intake-tile intake-paste">
-              <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">▤</span><strong>Paste transcript</strong></div>
-              <details class="paste-expander" open>
-                <summary>Paste a speaker-labelled transcript · expand / collapse</summary>
-                <textarea id="paste" rows="5" placeholder="Paste a Genesys transcript with speaker labels and timestamps…">${esc(state.pasteDraft || "")}</textarea>
-              </details>
-              <small>Automatically imports valid pasted transcripts</small>
+              <div class="intake-tile-heading">
+                <span class="intake-option-icon" aria-hidden="true">▤</span>
+                <strong>Text transcript</strong>
+                <span class="studio-v5-info" title="Paste a speaker-labelled call or chat transcript. Valid dialogue is imported automatically." aria-label="Transcript format information">ⓘ</span>
+              </div>
+              <small class="studio-v5-source-help">Paste a single call/interaction transcript or agent output.</small>
+              <textarea id="paste" rows="12" maxlength="50000" aria-label="Text transcript" placeholder="Paste transcript text or agent data here…">${esc(state.pasteDraft || "")}</textarea>
+              <div class="studio-v5-character-count"><span id="paste-count">${String(state.pasteDraft || "").length.toLocaleString("en-US")}</span>/50,000</div>
               <p id="import-feedback" class="muted" role="status" aria-live="polite">${esc(state.importFeedback || "")}</p>
             </div>
+            <div class="studio-v5-upload-stack">
             <div class="intake-tile intake-file">
               <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">⇧</span><strong>Upload transcript</strong></div>
               <label class="upload" for="file">
-                <span>⇧</span><b>Browse transcript file</b>
+                <span>⇧</span><b>Choose transcript file</b>
                 <small>TXT · TSV · CSV · JSON · SRT · VTT · MD</small>
               </label>
               <input id="file" type="file" accept=".txt,.tsv,.csv,.json,.srt,.vtt,.md,.log" hidden ${running ? "disabled" : ""}>
@@ -353,60 +353,11 @@ export function studio(state) {
             <div class="intake-tile intake-audio">
               <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">♫</span><strong>Audio file</strong></div>
               <div class="upload audio-coming-soon">
-                <span>♫</span><b>Audio intake · upcoming</b>
-                <small>Not enabled in this prototype. Use a transcript export.</small>
+                <span>♫</span><b>Choose audio file</b>
+                <small>Not yet enabled in this prototype.</small>
               </div>
             </div>
-          </div>
-
-          <div class="toolbar">
-            <button class="primary"
-              id="all"
-              ${ready && !running ? "" : "disabled"}>
-              ${message?.startsWith("Stopped —") ? "▶ Resume pending" : "✦ Evaluate all"} (${ready})
-            </button>
-
-            <button class="secondary" id="rerunAll"
-              ${!running && calls.some(c=>["READY","ERROR","COMPLETE"].includes(c.status)) ? "" : "disabled"}>
-              ↻ Reassess full batch
-            </button>
-
-            <button class="secondary"
-              id="demo"
-              ${running ? "disabled" : ""}>
-              Load sample
-            </button>
-
-            <button class="secondary"
-              id="one"
-              ${canEvaluateSelected ? "" : "disabled"}>
-              ${calls.find(c => c.key === selected)?.status === "COMPLETE"
-                ? "Re-evaluate selected" : "Evaluate selected"}
-            </button>
-
-            <button class="secondary"
-              id="stopAfter"
-              ${running && !state.stopAfterCurrent ? "" : "disabled"}
-              aria-pressed="${state.stopAfterCurrent ? "true" : "false"}">
-              ${state.stopAfterCurrent ? "✓ Stop requested" : "Finish current & stop"}
-            </button>
-            <button class="secondary"
-              id="stop"
-              ${running ? "" : "disabled"}>
-              Stop evaluation
-            </button>
-
-            <button class="secondary"
-              id="json"
-              ${calls.length ? "" : "disabled"}>
-              Export JSON
-            </button>
-
-            <button class="secondary"
-              id="csv"
-              ${done ? "" : "disabled"}>
-              CSV
-            </button>
+            </div>
           </div>
 
           <div class="footnote">
@@ -429,12 +380,10 @@ export function studio(state) {
             <div><dt>Interactions</dt><dd>${calls.length}</dd></div>
             <div><dt>Status</dt><dd>${running?(state.stopAfterCurrent?"Stopping after current":"In progress"):ready?(message?.startsWith("Stopped —")?"Stopped · ":"Ready · ")+ready+" pending":done?"Last cycle complete":"Ready"}</dd></div></dl>
           </section>
-        <section class="panel">
+        <section class="panel studio-v5-progress">
           <div class="panel-heading">
             <div>
-              <span class="kicker">
-                LIVE BATCH PROGRESS
-              </span>
+              <span class="kicker">LIVE BATCH PROGRESS</span>
 
               <h3>Processing status</h3>
             </div>
@@ -479,6 +428,39 @@ export function studio(state) {
           </div>
         </section>
 
+        </div>
+      </div>
+      </div><!-- studio-v5-dashboard -->
+      <div class="studio-v5-toolbar" role="group" aria-label="Evaluation and batch actions">
+        <div class="studio-v5-action-group studio-v5-run">
+          <span class="studio-v5-group-label">EVALUATION</span>
+          <div class="studio-v5-actions">
+            <button class="primary" id="all" ${ready && !running ? "" : "disabled"}>
+              ${message?.startsWith("Stopped —") ? "▶ Resume pending" : "▷ Evaluate"}${ready ? " (" + ready + ")" : ""}
+            </button>
+            <button class="secondary" id="stop" ${running ? "" : "disabled"}>■ Stop evaluation</button>
+            <button class="secondary" id="stopAfter" ${running && !state.stopAfterCurrent ? "" : "disabled"}
+              aria-pressed="${state.stopAfterCurrent ? "true" : "false"}">
+              ${state.stopAfterCurrent ? "✓ Stop requested" : "⚑ Finish current & stop"}
+            </button>
+          </div>
+        </div>
+        <div class="studio-v5-action-group studio-v5-batch">
+          <span class="studio-v5-group-label">BATCH ACTIONS</span>
+          <div class="studio-v5-actions">
+            <button class="secondary" id="one" ${canEvaluateSelected ? "" : "disabled"}>
+              ${calls.find(c => c.key === selected)?.status === "COMPLETE" ? "↻ Re-evaluate selected" : "Evaluate selected"}
+            </button>
+            <button class="secondary" id="clearBatch" ${!running && calls.length ? "" : "disabled"}>♧ Remove all batch</button>
+            <button class="secondary" id="demo" ${running ? "disabled" : ""}>▤ Load sample</button>
+          </div>
+        </div>
+        <div class="studio-v5-action-group studio-v5-exports">
+          <span class="studio-v5-group-label">EXPORT</span>
+          <div class="studio-v5-actions">
+            <button class="secondary" id="json" ${calls.length ? "" : "disabled"}>▤ Export JSON</button>
+            <button class="secondary" id="csv" ${done ? "" : "disabled"}>▦ CSV</button>
+          </div>
         </div>
       </div>
       <div class="studio-queue-row">
