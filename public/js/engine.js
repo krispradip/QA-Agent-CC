@@ -469,6 +469,7 @@ export async function assess(
         },
 
         body: JSON.stringify({
+          provider: rubric.provider || "gemini",
           model: rubric.model,
           instructions: rubric.instructions,
           references: referenceContext.entries || [],
@@ -538,6 +539,7 @@ export async function assess(
     referenceRevision: referenceContext.revision ?? null,
     referenceSources: [...new Set((referenceContext.entries||[]).map(r=>r.source))],
     referenceEntriesUsed: (referenceContext.entries||[]).length,
+    provider: rubric.provider || "gemini",
     model: rubric.model,
     version: rubric.version,
     at: new Date().toISOString(),
