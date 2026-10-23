@@ -794,6 +794,25 @@ root.addEventListener("click", event => {
     return;
   }
 
+  if (button.id === "clearBatch") {
+    if (state.running || !state.calls.length) return;
+    if (!confirm("Remove all interactions, transcripts and saved QA assessments from this browser? This cannot be undone.")) return;
+    void clearHistory().then(() => {
+      state.calls = [];
+      state.selected = null;
+      state.agentFilter = "";
+      state.search = "";
+      state.overviewAgent = "";
+      state.importFeedback = "";
+      state.pasteDraft = "";
+      state.message = "Batch removed";
+      state.phase = "idle";
+      render();
+      notify("Batch removed. All browser-saved interactions and assessments have been cleared.");
+    }).catch(e => notify("Could not remove batch: " + e.message, true));
+    return;
+  }
+
   if (button.id === "demo") {
     load(SAMPLE, "demo.txt");
     return;
@@ -1067,6 +1086,8 @@ let pasteImportTimer = null;
 root.addEventListener("input", event => {
   if (event.target.id === "paste") {
     state.pasteDraft = event.target.value;
+    const characterCount = root.querySelector("#paste-count");
+    if (characterCount) characterCount.textContent = state.pasteDraft.length.toLocaleString("en-US");
     if (pasteImportTimer) clearTimeout(pasteImportTimer);
     const snapshot = state.pasteDraft;
     if (state.running || !snapshot.trim()) return;
