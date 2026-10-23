@@ -415,7 +415,8 @@ export async function assess(
   call,
   rubric,
   signal,
-  onStage
+  onStage,
+  referenceContext = {entries:[],revision:null}
 ) {
   call.status = "RUNNING";
 
@@ -470,6 +471,7 @@ export async function assess(
         body: JSON.stringify({
           model: rubric.model,
           instructions: rubric.instructions,
+          references: referenceContext.entries || [],
 
           criteria: ai.map(c => ({
             id: c.id,
@@ -533,6 +535,9 @@ export async function assess(
    */
   call.meta = {
     rubricRevision: rubric.revision,
+    referenceRevision: referenceContext.revision ?? null,
+    referenceSources: [...new Set((referenceContext.entries||[]).map(r=>r.source))],
+    referenceEntriesUsed: (referenceContext.entries||[]).length,
     model: rubric.model,
     version: rubric.version,
     at: new Date().toISOString(),
