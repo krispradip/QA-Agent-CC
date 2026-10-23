@@ -146,7 +146,7 @@ function executeRule(call,def,rule,rules) {
   // Parsed elapsed seconds are preferred; reparse MM:SS or HH:MM:SS only
   // when the transcript carries a valid elapsed timestamp.
   const elapsed=Number.isFinite(first.seconds)?first.seconds:(()=>{
-    const m=String(first.timestamp||"").trim().match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+    const m=String(first.timestamp||"").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
     if(!m)return null;
     const n=m[3]===undefined?Number(m[1])*60+Number(m[2]):
       Number(m[1])*3600+Number(m[2])*60+Number(m[3]);
