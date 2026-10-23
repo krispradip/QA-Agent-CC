@@ -812,8 +812,10 @@ export function callDetail(call, rubric, tab = "scorecard") {
 
                     ${a.validation?.status==="UNVERIFIED" ? `
                       <p class="qa-validation-warning"><strong>Evidence unverified</strong> · Original: ${esc(a.validation.originalState)} · Final: UNKNOWN. ${esc(a.validation.reason)}</p>
+                    ` : a.validation?.status==="CORRECTED" ? `
+                      <p class="qa-validation-corrected"><strong>Independent review corrected the assessment</strong> · Original: ${esc(a.validation.originalState)} → Final: ${esc(a.validation.finalState || a.state)}. ${esc(a.validation.reason)}</p>
                     ` : a.validation?.status==="VERIFIED" ? `
-                      <span class="qa-validation-ok">Evidence verified</span>
+                      <span class="qa-validation-ok" title="${esc(a.validation.reason||"Independent evidence verified")}">Evidence verified</span>
                     ` : ""}
                     ${(a.evidence || []).map(e => `
                       <blockquote dir="auto">
