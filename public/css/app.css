@@ -76,6 +76,7 @@ select:focus-visible {
 .brand-mark {
   height: 45px;
   width: 45px;
+  flex: 0 0 45px;
   display: grid;
   place-items: center;
   background: linear-gradient(
@@ -97,8 +98,9 @@ select:focus-visible {
 }
 
 .brand strong {
-  font-size: 23px;
-  letter-spacing: -1px;
+  font-size: 19px;
+  letter-spacing: -0.8px;
+  white-space: nowrap;
 }
 
 .brand strong span {
