@@ -30,6 +30,7 @@ import { loadHistory, saveHistory, mergeImported, clearHistory } from "./history
 import { applyPeriod } from "./reporting.js";
 import {loadReferenceLibrary, saveReferenceLibrary, importReferenceDataset, toggleReferenceDataset, deleteReferenceDataset, csvTemplate, activeReferenceEntries} from "./reference.js";
 import {configShell, referenceLibraryView} from "./reference-ui.js";
+import { scrollPageToTop } from "./navigation.js";
 
 import {
   overview,
@@ -202,10 +203,7 @@ function navigate(page) {
   render();
   // A page change should never inherit the scroll position of the Studio.
   // This applies to top navigation, Agents & Reports and Inspect assessment.
-  window.scrollTo(0, 0);
-  if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
-  const main = document.querySelector(".main");
-  if (main) main.scrollTop = 0;
+  scrollPageToTop(window, document);
 }
 
 /**
