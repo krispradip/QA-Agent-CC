@@ -53,7 +53,8 @@ test("Agent and dashboard summary never treat unevaluated calls as scored", () =
   const html=renderDashboardSummary(calls,"Agent A");
   assert.match(html,/93%/);
   assert.match(html,/56%/);
-  assert.doesNotMatch(html,/Agent B/);
+  // Other agents remain available in the filter dropdown; only Agent A may appear as a result card.
+  assert.doesNotMatch(html,/data-dashboard-agent="Agent B"/);
   assert.match(renderScoreExplanation(calls[0]),/93%/);
 });
 
