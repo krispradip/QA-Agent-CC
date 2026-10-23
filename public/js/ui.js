@@ -317,7 +317,7 @@ export function studio(state) {
     );
 
   return `
-    <div class="studio-intro"><div><span class="kicker">AI EVALUATION STUDIO</span><h2>Evaluate interactions with AI</h2><p>Import conversations and turn them into evidence-linked quality intelligence.</p></div><div class="studio-trust studio-trust-head"><span class="studio-trust-icon">✓</span><span>Evidence validated · Accurate · Scalable</span></div></div>
+    <div class="studio-intro"><div><span class="kicker">AI EVALUATION STUDIO</span><h2>Evaluate interactions with AI</h2><p>Import conversations and turn them into evidence-linked quality intelligence.</p></div></div>
     <div class="studio studio-v3 studio-v4">
       <div class="studio-intake-column">
         <section class="panel studio-intake-panel">
@@ -330,7 +330,7 @@ export function studio(state) {
               <h3>Choose your interaction source</h3>
             </div>
 
-            <span class="tag">AUTO-IMPORT ENABLED</span>
+
           </div>
 
           <div class="studio-intake-grid">
@@ -417,7 +417,7 @@ export function studio(state) {
         ${aiPanel(phase, message)}
         </div>
         <div class="studio-evaluator-side">
-          <div class="studio-trust"><span class="studio-trust-icon">✓</span><div><strong>Evidence validated · Accurate · Scalable</strong><small>Evidence-led quality intelligence</small></div></div>
+
           <section class="studio-eval-details panel">
             <div class="kicker">EVALUATION DETAILS</div>
             <dl><div><dt>Rubric</dt><dd>${esc(state.rubric.name || "SHARE QA Rubric")} · Rev ${esc(state.rubric.revision)}</dd></div>
