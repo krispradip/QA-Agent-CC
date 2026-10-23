@@ -1514,13 +1514,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .studio-trust small{display:block;font-size:10px;color:#ae7c8b;margin-top:3px}
 .studio-trust-icon{display:grid;place-items:center;border-radius:50%;width:32px;height:32px;flex:none;background:#9e2147;color:white;font-weight:800;font-size:19px}
 .studio-trust-head{max-width:285px;font-weight:750;font-size:11px}
-.studio-v4{display:flex!important;flex-direction:column;gap:14px}
+.studio-v4{display:flex!important;flex-direction:column;gap:10px}
 .studio-v4 .studio-intake-column{width:100%}
-.studio-v4 .studio-intake-panel{margin-bottom:0;background:linear-gradient(130deg,#fff,#fef6f9 65%,#fdf2f5)}
+.studio-v4 .studio-intake-panel{margin-bottom:0;padding:16px 18px;background:linear-gradient(130deg,#fff,#fef6f9 65%,#fdf2f5)}
 .studio-v4 .studio-intake-grid{grid-template-columns:1.15fr 1fr 1fr;gap:12px}
+/* The queue/progress already show import totals; collapsed feedback should not occupy space. */
+.studio-v4 #import-feedback:empty,.studio-v4 .qmf-stage:empty{display:none}
+.studio-v4 .studio-intake-grid{margin:10px 0 12px}
+.studio-v4 .studio-intake-panel .panel-heading{margin-bottom:10px}
+.studio-v4 .intake-tile-heading{margin-bottom:8px}
+.studio-v4 .studio-intake-panel .footnote{margin-top:8px}
+
 .studio-v4 .studio-intake-grid .intake-tile{padding:12px 14px}
-.studio-v4 .studio-intake-grid .upload{min-height:105px}
-.studio-v4 .intake-tile textarea{min-height:82px}
+.studio-v4 .studio-intake-grid .upload{min-height:90px}
+.studio-v4 .intake-tile textarea{min-height:72px}
 .studio-v4 .studio-evaluator-row{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,1fr);gap:14px;align-items:stretch}
 .studio-v4 .studio-evaluator-main,.studio-v4 .studio-evaluator-side{min-width:0}
 .studio-v4 .studio-evaluator-main .ai-panel{height:100%;min-height:305px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 51% 48%,#fcedf2 0%,#fdf1f5 52%,#fce8ee 100%);border:1px solid #fadee6;margin:0;box-shadow:0 11px 35px rgba(188,79,112,.1)}
