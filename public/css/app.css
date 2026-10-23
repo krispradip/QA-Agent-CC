@@ -1546,3 +1546,52 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .studio-v4 .toolbar button{padding:10px 13px}
 @media(max-width:1060px){.studio-v4 .studio-evaluator-row{grid-template-columns:1fr}.studio-v4 .studio-evaluator-side{display:grid;grid-template-columns:1fr 1fr}.studio-v4 .studio-evaluator-side>.studio-trust{grid-column:1/-1}}
 @media(max-width:780px){.studio-intro{align-items:flex-start;flex-direction:column}.studio-v4 .studio-intake-grid{grid-template-columns:1fr}.studio-v4 .studio-evaluator-side{grid-template-columns:1fr}}
+
+/* QAMAFer.AI preview / option cards and motion-led evaluation engine */
+.studio-v4 .intake-option-icon{display:grid;place-items:center;flex:none;width:37px;height:37px;border-radius:12px;background:linear-gradient(140deg,#ebe4ff,#ded3ff);color:#5e44e7;font-size:20px;font-weight:800;box-shadow:inset 0 1px 0 #fff9}
+.studio-v4 .intake-file .intake-option-icon{background:linear-gradient(140deg,#dcf8f3,#c9efe9);color:#089b83}
+.studio-v4 .intake-audio .intake-option-icon{background:linear-gradient(140deg,#fff0db,#ffe4c5);color:#e78324}
+.studio-v4 .intake-tile-heading{gap:12px;font-size:13px}
+.studio-v4 .qmf-evaluator{isolation:isolate;min-height:365px!important;position:relative;overflow:hidden!important;display:flex;align-items:center;justify-content:space-between;flex-direction:column;padding:18px 23px 20px!important;background:radial-gradient(ellipse at 50% 46%,#e7e9ff 0%,#e7f0ff 41%,#e4f8ff 90%)!important;border:1px solid #c7d9ff!important}
+.studio-v4 .qmf-evaluator:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent,#fff8,transparent);opacity:.28;pointer-events:none}
+.qmf-eval-brand{display:flex;align-items:center;gap:8px;color:#3231a6;font-weight:800;letter-spacing:.08em}
+.qmf-eval-star{font-size:21px;color:#6256ff;filter:drop-shadow(0 2px 9px #7767ff88)}
+.qmf-engine-pill{display:inline-flex;align-items:center;gap:8px;background:#ffffffa8;border:1px solid #d3d8ff;border-radius:999px;padding:7px 12px;color:#5147bd;font-size:10px;letter-spacing:.075em}
+.qmf-live-dot{width:7px;height:7px;background:#25bda1;border-radius:50%;box-shadow:0 0 0 4px #20c2a222}
+.qmf-processing .qmf-live-dot{background:#745bff;box-shadow:0 0 0 4px #705dff22;animation:qmfPulse 1.5s ease-in-out infinite}
+.qmf-eval-visual{position:relative;flex:none;height:205px;width:min(100%,550px);display:grid;place-items:center;margin-top:-4px}
+.qmf-eval-visual:before,.qmf-eval-visual:after{content:"";position:absolute;left:4%;right:4%;height:94px;top:58px;border-radius:50%;pointer-events:none;filter:blur(15px)}
+.qmf-eval-visual:before{background:linear-gradient(90deg,transparent,#61b8ff25,#9866f146,transparent);transform:rotate(-8deg)}
+.qmf-eval-visual:after{background:linear-gradient(90deg,transparent,#bb8cf53e,#53ceff31,transparent);transform:rotate(9deg)}
+.qmf-energy-waves{position:absolute;width:100%;height:92px;top:55px;border:2px solid #8183ff77;border-left-color:transparent;border-right-color:transparent;border-radius:50%;filter:drop-shadow(0 0 8px #8e8aff);transform:rotate(-8deg)}
+.qmf-wave-two{border-color:#74d5ff8a;border-left-color:transparent;border-right-color:transparent;transform:rotate(12deg);height:79px;top:65px}
+.qmf-orbit{position:absolute;display:grid;place-items:center;border-radius:50%}
+.qmf-orbit-outer{width:203px;height:203px;border:1px solid #aaa7ff8c;box-shadow:0 0 0 8px #aaa4ff0b,0 0 0 20px #6bbaff0d}
+.qmf-orbit-mid{width:175px;height:175px;border:2px solid #d8d3ff88;box-shadow:inset 0 0 18px #9b89ff47}
+.qmf-orbit-inner{width:150px;height:150px;border:1px solid #ffffffc7;box-shadow:0 0 20px #aaa6ff88}
+.qmf-orbit-outer i{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 13px #5d64ff}
+.qmf-orbit-outer i:nth-child(1){top:13px;left:36px}.qmf-orbit-outer i:nth-child(2){bottom:19px;right:25px}.qmf-orbit-outer i:nth-child(3){top:69px;right:-3px}
+.qmf-core-shell{position:relative;z-index:2;display:grid;place-items:center;width:139px;height:139px;border-radius:50%;background:conic-gradient(from 25deg,#b9ffff,#665aff,#efbaff,#5f71ff,#b9ffff);padding:5px;box-shadow:0 0 40px #6d5eff84,0 0 85px #7475ff53}
+.qmf-core{width:100%;height:100%;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 30% 24%,#79d7ff 0%,#6b6cff 26%,#4931d8 62%,#181b8f 100%);box-shadow:inset -14px -15px 27px #17118072,inset 5px 7px 20px #ffffff70}
+.qmf-core span{font-size:48px;font-weight:850;letter-spacing:-3px;color:#fff;text-shadow:0 0 22px #fff}
+.qmf-spark{position:absolute;z-index:4;color:#fff;text-shadow:0 0 12px #6e84ff;font-size:23px}
+.qmf-spark-a{left:17%;top:22%}.qmf-spark-b{right:17%;top:36%}.qmf-spark-c{right:28%;bottom:12%;font-size:16px}
+.qmf-eval-copy{position:relative;z-index:5;text-align:center;margin-top:-6px}
+.qmf-eval-copy h3{color:#2736a2!important;font-size:21px!important;font-weight:850;margin:0 0 5px!important;text-shadow:none}
+.qmf-eval-copy p{color:#6172a6;margin:0;font-size:11px}
+.qmf-stage{font-size:10px!important;color:#8690b6!important;margin-top:5px!important}
+.qmf-eval-footer{position:relative;z-index:5;display:flex;justify-content:center;align-items:center;gap:19px;flex-wrap:wrap;color:#566bb4;font-size:10px;font-weight:650;padding-top:10px}
+.qmf-ready .qmf-core-shell{animation:qmfReadyTurn 11s linear infinite}
+.qmf-ready .qmf-orbit-outer{animation:qmfReadyTurn 22s linear infinite}
+.qmf-ready .qmf-orbit-mid{animation:qmfReadyTurn 15s linear infinite reverse}
+.qmf-processing .qmf-core-shell{animation:qmfHover 2.3s ease-in-out infinite,qmfPulse 2.7s ease-in-out infinite}
+.qmf-processing .qmf-orbit-outer{animation:qmfReadyTurn 7s linear infinite}
+.qmf-processing .qmf-orbit-mid{animation:qmfReadyTurn 4.2s linear infinite reverse}
+.qmf-processing .qmf-energy-waves{animation:qmfWave 2.6s ease-in-out infinite}
+.qmf-processing .qmf-wave-two{animation:qmfWave 2.1s ease-in-out infinite reverse}
+@keyframes qmfReadyTurn{to{transform:rotate(360deg)}}
+@keyframes qmfHover{0%,100%{transform:translateY(9px)}50%{transform:translateY(-15px)}}
+@keyframes qmfPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.2)}}
+@keyframes qmfWave{0%,100%{scale:1;opacity:.55}50%{scale:1.12;opacity:1}}
+@media(max-width:700px){.studio-v4 .qmf-evaluator{min-height:335px!important;padding:14px!important}.qmf-eval-visual{height:175px;transform:scale(.8)}.qmf-eval-footer{gap:8px;font-size:9px}.qmf-eval-copy h3{font-size:17px!important}}
+@media(prefers-reduced-motion:reduce){.qmf-core-shell,.qmf-orbit,.qmf-energy-waves,.qmf-live-dot{animation:none!important}}
