@@ -366,6 +366,11 @@ export function studio(state) {
               ✦ Evaluate all (${ready})
             </button>
 
+            <button class="secondary" id="rerunAll"
+              ${!running && calls.some(c=>["READY","ERROR","COMPLETE"].includes(c.status)) ? "" : "disabled"}>
+              ↻ Reassess full batch
+            </button>
+
             <button class="secondary"
               id="demo"
               ${running ? "disabled" : ""}>
@@ -846,10 +851,10 @@ export function agentsView(state) {
           <h3>Agent QA overview</h3>
         </div>
 
-        <button class="secondary"
-          data-page-go="studio">
-          + Evaluate interactions
-        </button>
+        <div class="toolbar">
+          <button class="secondary" data-page-go="studio">+ Evaluate interactions</button>
+          ${agentFilter ? `<button class="secondary" id="rerunAgent" ${state.running || !calls.some(c=>c.agent===agentFilter && ["READY","ERROR","COMPLETE"].includes(c.status))?"disabled":""}>↻ Reassess this agent</button>` : ""}
+        </div>
       </div>
 
       ${tableAgents(calls)}
@@ -939,6 +944,23 @@ export function agentsView(state) {
           <p class="muted">Criterion-by-criterion rubric findings, met and missed checkpoints, verification and transcript evidence.</p>
           <p class="muted">Assessment rubric revision: ${esc(inspected.meta?.rubricRevision ?? "Not recorded")}</p>
         </div><button class="secondary" type="button" id="closeInspection">Close inspection ×</button></div>
+        ${inspected.assessmentHistory?.length ? `
+          <div class="panel qa-reassessment-comparison">
+            <h3>Assessment comparison</h3>
+            <p class="muted">Previous vs latest completed evaluation. History is preserved in this browser.</p>
+            ${(()=>{const previous=inspected.assessmentHistory.at(-1);const before=previous.score?.score;const after=inspected.score?.score;
+              return `<div class="row"><strong>Previous QA: ${fmt(before)}</strong> · <strong>Latest QA: ${fmt(after)}</strong>
+                · <span>Change: ${Number.isFinite(before)&&Number.isFinite(after)?(after-before>0?"+":"")+(after-before)+" points":"Unavailable"}</span></div>
+                <p class="muted">Previous rubric revision ${esc(previous.rubricRevision ?? "—")} · Latest revision ${esc(inspected.meta?.rubricRevision ?? "—")}</p>`;
+            })()}
+            <details><summary>Criterion changes</summary>
+              ${(()=>{const previous=inspected.assessmentHistory.at(-1);const prior=new Map((previous.findings||[]).map(x=>[x.id,x]));
+                return (inspected.findings||[]).filter(x=>{const p=prior.get(x.id);return !p||p.score!==x.score||p.status!==x.status||JSON.stringify(p.anchors?.map(a=>a.state))!==JSON.stringify(x.anchors?.map(a=>a.state));}).map(x=>`
+                  <p><strong>${esc(x.id)}</strong> · ${fmt(prior.get(x.id)?.score)} → ${fmt(x.score)} · ${esc(prior.get(x.id)?.status||"NEW")} → ${esc(x.status)}</p>`).join("")||"<p>No criterion-level changes.</p>";
+              })()}
+            </details>
+          </div>
+        ` : ""}
         ${callDetail(inspected, state.rubric, state.resultTab || "scorecard")}
       </section>
     ` : ""}
