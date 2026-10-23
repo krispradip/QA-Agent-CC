@@ -1915,3 +1915,33 @@ body:has(.studio-v5) .topbar{margin-bottom:14px;padding:0 0 12px;border-bottom:1
   .studio-v5 .studio-evaluator-main .qmf-evaluator{min-height:360px!important}
   .studio-v5 .studio-v5-toolbar{overflow-x:auto}
 }
+
+
+/* QA-STUDIO-V5-QUEUE | Compact Conversations toolbar + dedicated Inspect action. */
+.studio-v5 .studio-queue-row .panel-heading{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+.studio-v5 .studio-queue-row .panel-heading>div:first-child{flex:0 0 auto}
+.studio-v5 .studio-queue-row .panel-heading>.filters{
+  display:flex;align-items:center;gap:8px;flex:1 1 310px;min-width:250px;margin:0
+}
+.studio-v5 .studio-queue-row .panel-heading>.filters input{min-width:120px;flex:1 1 auto}
+.studio-v5 .studio-queue-row .panel-heading>.filters select{flex:0 0 130px;max-width:150px}
+.studio-v5 .studio-queue-row .studio-queue-actions{
+  flex:0 0 auto;display:flex;align-items:center;gap:10px;justify-content:flex-end
+}
+.studio-v5 .studio-queue-row .studio-queue-actions>.muted{font-size:10px;white-space:nowrap}
+.studio-v5 .studio-queue-row .table-scroll table{width:100%}
+.studio-v5 .studio-queue-row .table-scroll th:last-child,
+.studio-v5 .studio-queue-row .table-scroll td:last-child{text-align:right}
+.studio-v5 .studio-queue-agent{min-width:150px}
+.studio-v5 .studio-queue-agent .studio-agent-identity{min-width:0}
+.studio-v5 .studio-v5-inspect-cell{min-width:145px}
+.studio-v5 .studio-queue-row th{white-space:nowrap}
+@media(max-width:900px){
+ .studio-v5 .studio-queue-row .panel-heading>.filters{order:3;flex:1 1 100%;min-width:0}
+ .studio-v5 .studio-queue-row .panel-heading>.studio-queue-actions{margin-left:auto}
+}
+@media(max-width:570px){
+ .studio-v5 .studio-queue-row .panel-heading>.studio-queue-actions{order:2;width:100%;justify-content:space-between}
+ .studio-v5 .studio-queue-row .panel-heading>.filters{order:3;min-width:0}
+ .studio-v5 .studio-queue-row .panel-heading>.filters select{flex-basis:108px}
+}
