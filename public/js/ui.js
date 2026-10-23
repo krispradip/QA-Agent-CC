@@ -497,10 +497,13 @@ export function studio(state) {
               </h3>
             </div>
 
-            <span class="muted">
-              ${count(calls, "DUPLICATE")} duplicates
-              · ${failures} errors
-            </span>
+            <div class="studio-queue-actions">
+              <span class="muted">
+                ${count(calls, "DUPLICATE")} duplicates
+                · ${failures} errors
+              </span>
+              <button type="button" class="primary studio-open-reports" data-page-go="agents">Open Agents &amp; Reports →</button>
+            </div>
           </div>
 
           <div class="filters">
@@ -554,10 +557,16 @@ export function studio(state) {
                     data-agentname="${esc(c.agent)}">
 
                     <td>
-                      <b>${esc(c.agent)}</b>
-                      <small>
-                        ${esc(c.id || c.key)}
-                      </small>
+                      <div class="studio-queue-agent">
+                        <b>${esc(c.agent)}</b>
+                        <small>${esc(c.id || c.key)}</small>
+                        <button type="button" class="secondary studio-inspect-assessment"
+                          data-open="${esc(c.key)}"
+                          ${c.status === "COMPLETE" && c.findings?.length ? "" : "disabled"}
+                          aria-label="Inspect assessment for ${esc(c.agent)}">
+                          Inspect assessment →
+                        </button>
+                      </div>
                     </td>
 
                     <td>
@@ -607,21 +616,7 @@ export function studio(state) {
       </div>
     </div>
 
-    <section class="panel studio-results" id="call-detail">
-      <div class="panel-heading">
-        <div><span class="kicker">ASSESSMENT WORKFLOW</span><h3>Evaluation outcomes</h3>
-          <p class="muted">Full QA rubric results, evidence, and missed checkpoints are available in Agents &amp; Reports.</p>
-        </div>
-        <button type="button" class="primary" data-page-go="agents">Open Agents &amp; Reports →</button>
-      </div>
-      ${calls.find(c => c.key === selected) ? `
-        <p><strong>${esc(calls.find(c => c.key === selected).agent)}</strong> · ${esc(calls.find(c => c.key === selected).id || selected)}
-        · ${chip(calls.find(c => c.key === selected).status)}
-        · QA ${fmt(calls.find(c => c.key === selected).score?.score)}
-        · Coverage ${fmt(calls.find(c => c.key === selected).score?.coverage)}</p>
-        <button class="secondary" data-open="${esc(selected)}">Inspect assessment →</button>
-      ` : '<p class="muted">Select an interaction to see its processing summary.</p>'}
-    </section>
+
   `;
 }
 
@@ -1107,19 +1102,26 @@ export function configuration(rubric, selected) {
             </span>
           </div>
 
-          <label>LLM provider</label>
-          <select id="provider">
-            <option value="gemini" ${(rubric.provider||"gemini")==="gemini"?"selected":""}>Google Gemini</option>
-            <option value="databricks" ${rubric.provider==="databricks"?"selected":""}>Databricks Model Serving</option>
-          </select>
+          <label>Active Gemini model</label>
 
-          <label>Active model / endpoint</label>
           <select id="model">
-            <option value="gemini-3.5-flash-lite" ${(rubric.provider||"gemini")==="gemini"&&rubric.model==="gemini-3.5-flash-lite"?"selected":""} ${rubric.provider==="databricks"?"hidden":""}>Gemini 3.5 Flash-Lite</option>
-            <option value="gemini-2.5-flash-lite" ${(rubric.provider||"gemini")==="gemini"&&rubric.model==="gemini-2.5-flash-lite"?"selected":""} ${rubric.provider==="databricks"?"hidden":""}>Gemini 2.5 Flash-Lite</option>
-            <option value="databricks-configured" ${rubric.provider==="databricks"?"selected":""} ${rubric.provider==="databricks"?"":"hidden"}>Databricks — approved serving endpoint (Cloudflare-configured)</option>
+            <option
+              value="gemini-3.5-flash-lite"
+              ${rubric.model ===
+                "gemini-3.5-flash-lite"
+                  ? "selected" : ""}>
+              Gemini 3.5 Flash-Lite (default)
+            </option>
+
+            <option
+              value="gemini-2.5-flash-lite"
+              ${rubric.model ===
+                "gemini-2.5-flash-lite"
+                  ? "selected" : ""}>
+              Gemini 2.5 Flash-Lite
+              (legacy access)
+            </option>
           </select>
-          <p class="footnote">Databricks endpoint and token are secured in Cloudflare Worker bindings. Both evaluation and independent review use the selected provider. No fallback to another provider occurs silently.</p>
 
           <label>
             Global evaluator instructions
