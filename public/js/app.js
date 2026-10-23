@@ -663,6 +663,7 @@ root.addEventListener("click", event => {
 
   if (button.dataset.agent !== undefined) {
     state.agentFilter = button.dataset.agent;
+    state.selected = null;
     navigate("agents");
     return;
   }
@@ -675,9 +676,14 @@ root.addEventListener("click", event => {
 
   if (button.dataset.open) {
     state.selected = button.dataset.open;
-    state.agentFilter = "";
-
-    navigate("studio");
+    state.agentFilter = state.calls.find(c => c.key === state.selected)?.agent || "";
+    state.resultTab = "scorecard";
+    navigate("agents");
+    return;
+  }
+  if (button.id === "closeInspection") {
+    state.selected = null;
+    render();
     return;
   }
 
