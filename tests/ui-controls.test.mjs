@@ -56,9 +56,9 @@ test("Evaluation Studio keeps assessment actions within each conversation and re
     phase:"idle",message:"",search:"",agentFilter:"",rubric
   });
   assert.doesNotMatch(html,/ASSESSMENT WORKFLOW|studio-results|id="call-detail"/);
-  const queue=html.match(/<div class="studio-queue-row">([\\s\\S]*?)<div class="studio-hint-row">/)?.[1]||"";
+  const queue=html.match(/<div class="studio-queue-row">([\s\S]*?)<div class="studio-hint-row">/)?.[1]||"";
   assert.ok(queue,"Conversations panel must exist");
-  assert.match(queue,/0 duplicates\\s*· 0 errors/);
+  assert.match(queue,/0 duplicates\s*· 0 errors/);
   assert.match(queue,/<button[^>]+data-page-go="agents"[^>]*>Open Agents &amp; Reports/);
   assert.match(queue,/data-open="interaction:complete"/);
   assert.match(queue,/data-open="interaction:pending"/);
