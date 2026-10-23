@@ -867,8 +867,6 @@ root.addEventListener("click", event => {
     const model = root.querySelector("#model");
     const globalInstructions = root.querySelector("#global");
     if (model) state.rubric.model = model.value;
-    const provider = root.querySelector("#provider");
-    if (provider) state.rubric.provider = provider.value;
     if (globalInstructions) state.rubric.instructions = globalInstructions.value;
     save("All rubric changes saved. New assessments use this revision.");
     return;
@@ -923,8 +921,8 @@ root.addEventListener("click", event => {
     }
 
     state.rubric.instructions = value;
-    state.rubric.provider = $("#provider").value;
-    state.rubric.model = $("#model").value;
+    state.rubric.model =
+      $("#model").value;
 
     save(
       "Evaluator model and instructions saved."
@@ -994,20 +992,6 @@ root.addEventListener(
         notify(state.importFeedback, true);
       }
 
-      return;
-    }
-
-    if (target.id === "provider") {
-      // Update choices locally without destroying any unsaved rubric edits.
-      const model=root.querySelector("#model");
-      if(model) {
-        [...model.options].forEach(option=>{
-          option.hidden=target.value==="databricks"
-            ? option.value!=="databricks-configured"
-            : option.value==="databricks-configured";
-        });
-        model.value=target.value==="databricks"?"databricks-configured":"gemini-3.5-flash-lite";
-      }
       return;
     }
 
