@@ -414,10 +414,14 @@ export async function assess(
 ) {
   call.status = "RUNNING";
 
-  // Child activation is independent of the parent checkbox.
+  // QA hierarchy: a disabled parent is never assessed, regardless of
+  // stale child flags in an imported/legacy rubric. Enabled parents evaluate
+  // only their individually enabled qualitative and quantitative children.
   const enabled = rubric.criteria.filter(c =>
-    c.checkpoints?.some(a=>a.enabled===true) ||
-    linkedRules(c.id).some(id=>rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled))
+    c.enabled === true && (
+      c.checkpoints?.some(a=>a.enabled===true) ||
+      linkedRules(c.id).some(id=>rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled))
+    )
   );
 
   const ruleMap = new Map((rubric.rules.deterministic || []).map(r=>[r.id,r]));
