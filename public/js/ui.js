@@ -918,7 +918,7 @@ export function agentsView(state) {
                     <td>
                       <button class="link"
                         data-open="${esc(c.key)}">
-                        Review →
+                        Inspect →
                       </button>
                     </td>
                   </tr>
