@@ -353,14 +353,19 @@ export function overall(findings, rubric) {
     0
   );
 
+  // Historic/synthetic scored findings may lack a coverage field.
+  // A fully scored finding defaults to 100%; unknown findings default to 0%.
+  // Explicit partial coverage always takes precedence.
+  const findingCoverage = f => Number.isFinite(f.coverage)
+    ? f.coverage : f.status === "SCORED" ? 100 : 0;
   const coverageWeight = relevant.filter(f=>f.status!=="NOT_APPLICABLE")
     .reduce((sum,f)=>sum+Number(byId.get(f.id).weight),0);
   const observedWeight = relevant.filter(f=>f.status!=="NOT_APPLICABLE")
-    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100),0);
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,findingCoverage(f)))/100),0);
   const observedScoreWeight = relevant.filter(f=>f.status==="SCORED"&&f.score!==null)
-    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100),0);
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,findingCoverage(f)))/100),0);
   const observedScoreSum = relevant.filter(f=>f.status==="SCORED"&&f.score!==null)
-    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100)*f.score,0);
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,findingCoverage(f)))/100)*f.score,0);
 
   return {
     score: observedScoreWeight ? Math.round(observedScoreSum / observedScoreWeight) : null,
