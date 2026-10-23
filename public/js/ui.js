@@ -402,7 +402,7 @@ export function studio(state) {
           <div class="qa-timing-status" id="qa-timing-status" aria-live="off">
             <span>Elapsed <strong id="qa-elapsed">00:00</strong></span>
             <span>ETA <strong id="qa-eta">Calculating…</strong></span>
-            <span id="qa-batch-count">0 / 0 processed</span>
+            <span id="qa-batch-count">${handled} / ${calls.length} processed</span>
           </div>
           <div class="progress-numbers">
             <div>
