@@ -121,31 +121,41 @@ const phrases = {mandatory_greeting:"greetingTerms",mandatory_disclosure:"disclo
  prohibited_phrase:"prohibitedTerms",closing_statement:"closingTerms"};
 const minimum = new Set(["mandatory_greeting","mandatory_disclosure","closing_statement",
  "verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"]);
-function executeRule(call,def,rule,rules) {
+export function executeRule(call,def,rule,rules) {
  const id=def.id,limit=Number(rule.value);
  const unknown=reason=>({id,text:def.name,method:"quantitative",state:"UNKNOWN",reason,evidence:[]});
  if(!Number.isFinite(limit)||limit<0)return unknown("Invalid rule threshold");
  const turns=call.turns||[];
  if(id==="greeting_time"||id==="fallback_greeting"){
-  // QA-GREETING-ASR-001 | Genesys Arabic ASR often truncates the final
-  // pronoun in "شكرا لاتصالك" or inserts ellipses. Match the stable
-  // greeting phrase without requiring an exact final character.
-  const normalizeGreeting=x=>String(x||"").toLowerCase()
+  // Compare the first identifiable spoken greeting against elapsed interaction
+  // time. Arabic ASR can vary punctuation, diacritics and wording.
+  const normalize=x=>String(x||"").toLowerCase()
     .replace(/[\u064b-\u065f\u0670\u0640]/g,"")
     .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,"")
     .replace(/[^\p{L}\p{N}]+/gu," ").trim().replace(/\s+/g," ");
-  const first=turns.filter(t=>t.speaker==="agent").find(t=>{
-    const spoken=normalizeGreeting(t.text);
-    return (rules.greetingTerms||[]).some(term=>{
-      const configured=normalizeGreeting(term);
-      return configured && (spoken.includes(configured) ||
-        (configured==="شكرا لاتصالك" && spoken.includes("شكرا لاتصال")));
-    });
-  });
-  if(!first||typeof first.seconds!=="number"||!Number.isFinite(first.seconds))
-   return unknown("Timestamped greeting is not available");
-  return {id,text:def.name,method:"quantitative",state:first.seconds<=limit?"MET":"MISSED",
-   reason:"Greeting at "+first.timestamp+" ("+first.seconds+"s); threshold "+limit+"s",
+  const greetingTerms=(rules.greetingTerms||[]).map(normalize).filter(Boolean);
+  if(!greetingTerms.length)return unknown("Greeting vocabulary is not configured");
+  const isGreeting=text=>{
+    const spoken=normalize(text);
+    return greetingTerms.some(term=>spoken.includes(term) ||
+      (term==="شكرا لاتصالك" && spoken.includes("شكرا لاتصال"))) ||
+      /(?:^| )(?:اهلا|مرحبا|السلام عليكم|وعليكم السلام|شكرا لاتصال|شكرا على اتصال|شكرا على تواصلك)(?: |$)/u.test(spoken);
+  };
+  const first=turns.find(t=>t.speaker==="agent"&&isGreeting(t.text));
+  if(!first)return unknown("No recognizable agent greeting in transcript");
+  // Parsed elapsed seconds are preferred; reparse MM:SS or HH:MM:SS only
+  // when the transcript carries a valid elapsed timestamp.
+  const elapsed=Number.isFinite(first.seconds)?first.seconds:(()=>{
+    const m=String(first.timestamp||"").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if(!m)return null;
+    const n=m[3]===undefined?Number(m[1])*60+Number(m[2]):
+      Number(m[1])*3600+Number(m[2])*60+Number(m[3]);
+    return Number.isFinite(n)?n:null;
+  })();
+  if(elapsed===null||elapsed<0)
+    return unknown("Recognizable greeting found, but elapsed timing is unavailable");
+  return {id,text:def.name,method:"quantitative",state:(rule.operator===">="?elapsed>=limit:rule.operator===">"?elapsed>limit:rule.operator==="<"?elapsed<limit:rule.operator==="=="?elapsed===limit:rule.operator==="!="?elapsed!==limit:elapsed<=limit)?"MET":"MISSED",
+   reason:"Greeting at "+first.timestamp+" ("+elapsed+"s); threshold "+limit+"s",
    evidence:[{line:first.line,quote:first.text}]};
  }
  if(phrases[id]){
@@ -155,7 +165,10 @@ function executeRule(call,def,rule,rules) {
   if(!turns.length)return unknown("Transcript is missing");
   const matches=turns.filter(t=>t.speaker==="agent"&&terms.some(term=>
    term&&t.text.toLowerCase().includes(String(term).toLowerCase())));
-  const met=id==="prohibited_phrase"?matches.length<=limit:matches.length>=limit;
+  const operator=rule.operator || (id==="prohibited_phrase"?"<=":">=");
+  const comparisons={">=":matches.length>=limit,">":matches.length>limit,"<=":matches.length<=limit,"<":matches.length<limit,"==":matches.length===limit,"!=":matches.length!==limit};
+  if(!Object.hasOwn(comparisons,operator))return unknown("Invalid configured comparison operator");
+  const met=comparisons[operator];
   return {id,text:def.name,method:"quantitative",state:met?"MET":"MISSED",
    reason:matches.length+" matching agent turns; threshold "+limit,
    evidence:matches.map(t=>({line:t.line,quote:t.text}))};
@@ -178,9 +191,12 @@ function executeRule(call,def,rule,rules) {
  }else value=raw;
  if(typeof value!=="number"||!Number.isFinite(value)||value<0)
   return unknown("Invalid "+spec[0]+" evidence");
- const met=minimum.has(id)?value>=limit:value<=limit;
+ const operator=rule.operator || (minimum.has(id)?">=":"<=");
+ const comparisons={">=":value>=limit,">":value>limit,"<=":value<=limit,"<":value<limit,"==":value===limit,"!=":value!==limit};
+ if(!Object.hasOwn(comparisons,operator))return unknown("Invalid configured comparison operator");
+ const met=comparisons[operator];
  return {id,text:def.name,method:"quantitative",state:met?"MET":"MISSED",
-  reason:"Observed "+value+"; threshold "+limit,
+  reason:"Observed "+value+" "+(met?"satisfies ":"does not satisfy ")+operator+" "+limit,
   evidence:[{line:0,quote:"Verified interaction evidence: "+spec[0]+" = "+value}]};
 }
 function combineCriterion(criterion,ai,checks){
@@ -337,14 +353,19 @@ export function overall(findings, rubric) {
     0
   );
 
+  // Historic/synthetic scored findings may lack a coverage field.
+  // A fully scored finding defaults to 100%; unknown findings default to 0%.
+  // Explicit partial coverage always takes precedence.
+  const findingCoverage = f => Number.isFinite(f.coverage)
+    ? f.coverage : f.status === "SCORED" ? 100 : 0;
   const coverageWeight = relevant.filter(f=>f.status!=="NOT_APPLICABLE")
     .reduce((sum,f)=>sum+Number(byId.get(f.id).weight),0);
   const observedWeight = relevant.filter(f=>f.status!=="NOT_APPLICABLE")
-    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100),0);
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,findingCoverage(f)))/100),0);
   const observedScoreWeight = relevant.filter(f=>f.status==="SCORED"&&f.score!==null)
-    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100),0);
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,findingCoverage(f)))/100),0);
   const observedScoreSum = relevant.filter(f=>f.status==="SCORED"&&f.score!==null)
-    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,f.coverage||0))/100)*f.score,0);
+    .reduce((sum,f)=>sum+Number(byId.get(f.id).weight)*(Math.max(0,Math.min(100,findingCoverage(f)))/100)*f.score,0);
 
   return {
     score: observedScoreWeight ? Math.round(observedScoreSum / observedScoreWeight) : null,
@@ -394,14 +415,19 @@ export async function assess(
   call,
   rubric,
   signal,
-  onStage
+  onStage,
+  referenceContext = {entries:[],revision:null}
 ) {
   call.status = "RUNNING";
 
-  // Child activation is independent of the parent checkbox.
+  // QA hierarchy: a disabled parent is never assessed, regardless of
+  // stale child flags in an imported/legacy rubric. Enabled parents evaluate
+  // only their individually enabled qualitative and quantitative children.
   const enabled = rubric.criteria.filter(c =>
-    c.checkpoints?.some(a=>a.enabled===true) ||
-    linkedRules(c.id).some(id=>rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled))
+    c.enabled === true && (
+      c.checkpoints?.some(a=>a.enabled===true) ||
+      linkedRules(c.id).some(id=>rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled))
+    )
   );
 
   const ruleMap = new Map((rubric.rules.deterministic || []).map(r=>[r.id,r]));
@@ -445,6 +471,7 @@ export async function assess(
         body: JSON.stringify({
           model: rubric.model,
           instructions: rubric.instructions,
+          references: referenceContext.entries || [],
 
           criteria: ai.map(c => ({
             id: c.id,
@@ -508,6 +535,9 @@ export async function assess(
    */
   call.meta = {
     rubricRevision: rubric.revision,
+    referenceRevision: referenceContext.revision ?? null,
+    referenceSources: [...new Set((referenceContext.entries||[]).map(r=>r.source))],
+    referenceEntriesUsed: (referenceContext.entries||[]).length,
     model: rubric.model,
     version: rubric.version,
     at: new Date().toISOString(),

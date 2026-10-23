@@ -13,7 +13,8 @@
 import {
   loadRubric,
   saveRubric,
-  linkedRules
+  linkedRules,
+  setCriterionEnabled
 } from "./config.js";
 
 import {
@@ -27,6 +28,8 @@ import {
 } from "./engine.js";
 import { loadHistory, saveHistory, mergeImported, clearHistory } from "./history.js";
 import { applyPeriod } from "./reporting.js";
+import {loadReferenceLibrary, saveReferenceLibrary, importReferenceDataset, toggleReferenceDataset, deleteReferenceDataset, csvTemplate, activeReferenceEntries} from "./reference.js";
+import {configShell, referenceLibraryView} from "./reference-ui.js";
 
 import {
   overview,
@@ -50,10 +53,14 @@ const state = {
   search: "",
   importFeedback: "",
   pasteDraft: "",
+  resultTab: "scorecard",
 
   rubric: loadRubric(),
+  references: loadReferenceLibrary(),
+  configTab: "rubric",
 
   criterion: "greet7",
+  stopAfterCurrent: false,
   running: false,
   phase: "idle",
 
@@ -80,8 +87,8 @@ const titles = {
   ],
 
   config: [
-    "QA Configuration",
-    "Edit the rubric checkpoints, rules and AI evaluator."
+    "Config",
+    "Manage QA scoring parameters and approved evaluation reference materials."
   ]
 };
 
@@ -92,7 +99,7 @@ const titles = {
 function render() {
   const preserveScroll = state.page === "config";
   const previousY = preserveScroll ? window.scrollY : 0;
-  const previousPanel = preserveScroll ? root.querySelector(".configuration .index") : null;
+  const previousPanel = preserveScroll && state.configTab === "rubric" ? root.querySelector(".configuration .index") : null;
   const previousPanelY = previousPanel?.scrollTop || 0;
   const [title, sub] = titles[state.page];
 
@@ -118,17 +125,52 @@ function render() {
         : state.page === "agents"
           ? agentsView(state)
 
-          : configuration(
-              state.rubric,
-              state.criterion
+          : configShell(state.configTab,
+              state.configTab === "rubric"
+                ? configuration(state.rubric,state.criterion)
+                : referenceLibraryView(state.references)
             );
 
   filterRows();
+  if (state.page === "config" && state.configTab === "rubric") {
+    for (const criterion of state.rubric.criteria) updateParentSelectionIndicator(criterion.id);
+  }
   if (state.page === "studio") paintProgress();
   if (preserveScroll) {
     const panel = root.querySelector(".configuration .index");
     if (panel) panel.scrollTop = previousPanelY;
     window.scrollTo(0, previousY);
+  }
+}
+
+/** Sync the visible master checkbox with enabled child checks, including a
+ * mixed state when a business user deliberately selects only some checks. */
+function updateParentSelectionIndicator(id) {
+  const criterion = state.rubric.criteria.find(c => c.id === id);
+  const input = [...root.querySelectorAll("[data-enabled]")].find(x => x.dataset.enabled === id);
+  if (!criterion || !input) return;
+  const owned = linkedRules(id);
+  const rules = (state.rubric.rules?.deterministic || []).filter(r => owned.includes(r.id));
+  const checks = [...(criterion.checkpoints || []), ...rules];
+  const selected = checks.filter(a => a.enabled === true).length;
+  input.checked = criterion.enabled === true;
+  input.indeterminate = criterion.enabled === true && selected > 0 && selected < checks.length;
+  input.setAttribute("aria-checked", input.indeterminate ? "mixed" : String(input.checked));
+
+  // Keep the active-child count accurate without re-rendering draft text fields.
+  const button = input.closest(".rubric-row")?.querySelector("[data-criterion]");
+  if (!button) return;
+  let badge = button.querySelector(".qa-child-active-badge");
+  if (!input.indeterminate) {
+    badge?.remove();
+  } else {
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "qa-child-active-badge";
+      badge.title = "Only selected child checks will be assessed";
+      button.querySelector(".qa-expand-indicator")?.before(badge);
+    }
+    badge.textContent = selected + "/" + checks.length + " active";
   }
 }
 
@@ -303,21 +345,17 @@ function paintProgress() {
     ? "~"+format(Math.ceil(seconds/p.completed*(p.total-p.completed)))
     : p.completed===p.total ? "00:00" : "Calculating…";
 }
-async function run(all) {
+async function run(scope = "ready") {
   if (state.running) return;
 
-  const target = all
-    ? state.calls.filter(
-        c => c.status === "READY"
-      )
-    : [
-        state.calls.find(
-          c => c.key === state.selected
-        )
-      ].filter(c =>
-        c &&
-        ["READY", "ERROR", "COMPLETE"].includes(c.status)
-      );
+  const evaluable = c => c && ["READY", "ERROR", "COMPLETE"].includes(c.status);
+  const target = scope === "all"
+    ? state.calls.filter(evaluable)
+    : scope === "agent"
+      ? state.calls.filter(c => c.agent === state.agentFilter && evaluable(c))
+      : scope === "selected"
+        ? [state.calls.find(c => c.key === state.selected)].filter(evaluable)
+        : state.calls.filter(c => c.status === "READY");
 
   if (!target.length) {
     notify("No evaluable interaction selected. Check the import status and speaker mapping.", true);
@@ -328,6 +366,7 @@ async function run(all) {
    * Lock the rubric during this batch.
    */
   const snapshot = clone(state.rubric);
+  const referenceSnapshot = clone(state.references);
 
   state.stopAfterCurrent = false;
   state.running = true;
@@ -341,11 +380,24 @@ async function run(all) {
 
   try {
     for (const call of target) {
-      if (state.controller.signal.aborted) {
+      if (state.controller.signal.aborted || state.stopAfterCurrent) {
         stopped = true;
         break;
       }
 
+      // Capture the pre-run assessment so an aborted re-evaluation can be
+      // rolled back without discarding a previously completed result.
+      const before = clone({
+        status: call.status, error: call.error || "",
+        findings: call.findings || [], score: call.score ?? null,
+        meta: call.meta ?? null, evaluatedAt: call.evaluatedAt ?? null,
+        assessmentHistory: call.assessmentHistory || []
+      });
+      const previous = before.status === "COMPLETE" && before.findings.length
+        ? { evaluatedAt: before.evaluatedAt, score: before.score,
+            findings: before.findings, meta: before.meta,
+            rubricRevision: before.meta?.rubricRevision ?? null }
+        : null;
       call.status = "READY";
       call.error = "";
       call.findings = [];
@@ -359,16 +411,18 @@ async function run(all) {
           call,
           snapshot,
           state.controller.signal,
-          stage
+          stage,
+          {
+            revision: referenceSnapshot.revision,
+            entries: activeReferenceEntries(referenceSnapshot,call,
+              snapshot.criteria.filter(c=>c.enabled===true)),
+          }
         );
 
       } catch (err) {
         if (state.controller.signal.aborted) {
-          call.status = "READY";
-          call.error = "";
-          call.findings = [];
-          call.score = null;
-
+          // Hard stop must not destroy the old score during a reassessment.
+          Object.assign(call, before);
           stopped = true;
           break;
         }
@@ -391,6 +445,13 @@ async function run(all) {
         }
       }
 
+      if (call.status === "COMPLETE") {
+        call.evaluatedAt = new Date().toISOString();
+        // Only append comparison history once the new evaluation succeeds.
+        if (previous) {
+          call.assessmentHistory = [...before.assessmentHistory, previous].slice(-20);
+        }
+      }
       state.evalProgress.completed++;
       await persist();
       render();
@@ -412,9 +473,12 @@ async function run(all) {
     state.message = quota
       ? "Gemini quota reached; pending calls remain ready"
       : stopped
-        ? "Stopped — finished calls are retained"
+        ? "Stopped — completed results retained; pending interactions can be resumed with Evaluate all"
         : "Evaluation cycle finished — inspect results";
 
+    // Persist the stopped state as well as completed items, including
+    // restoration of any assessment interrupted during a reassessment.
+    await persist();
     render();
     paintProgress();
   }
@@ -565,7 +629,7 @@ function captureCriterionDraft() {
     const items = inputs.map(input => ({
       id: c.id + "-" + (Number(input.dataset.anchorText) + 1),
       text: input.value.trim(),
-      enabled: !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked,
+      enabled: c.enabled !== false && !!root.querySelector('[data-anchor-enabled="' + input.dataset.anchorText + '"]')?.checked,
       points: Number(root.querySelector('[data-anchor-points="' + input.dataset.anchorText + '"]')?.value)
     }));
     if (!items.length || items.length > 12 || items.some(x=>!x.text || x.text.length>250 || !Number.isFinite(x.points) || x.points<0 || x.points>100)) {
@@ -578,7 +642,8 @@ function captureCriterionDraft() {
   // Persist nested quantitative rules with the same rubric revision.
   const editedRules = [...root.querySelectorAll("[data-rule-value]")].map(input => ({
     id: input.dataset.ruleValue,
-    enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+    enabled: c.enabled !== false && !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+    operator: root.querySelector('[data-rule-operator="' + input.dataset.ruleValue + '"]')?.value || "<=",
     value: input.value.trim() === "" ? NaN : Number(input.value)
   }));
   if (editedRules.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
@@ -637,6 +702,45 @@ root.addEventListener("click", event => {
 
   if (!button) return;
 
+  if (button.dataset.configTab) {
+    if (state.configTab === button.dataset.configTab) return;
+    if (state.configTab === "rubric" && !captureCriterionDraft()) return;
+    state.configTab = button.dataset.configTab;
+    render();
+    return;
+  }
+
+  if (button.dataset.refTemplate) {
+    const type = button.dataset.refTemplate;
+    const content = csvTemplate(type);
+    const blob = new Blob([content], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "qaai-"+type+"-reference-template.csv";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  if (button.dataset.refDelete !== undefined) {
+    if (!confirm("Delete this stored reference version from this browser?")) return;
+    try {
+      state.references = saveReferenceLibrary(deleteReferenceDataset(state.references,button.dataset.refDelete));
+      render();
+      notify("Reference version deleted. Future assessments use active files only.");
+    } catch(e) { notify(e.message,true); }
+    return;
+  }
+
+  if (button.dataset.resultTab) {
+    state.resultTab = button.dataset.resultTab;
+    render();
+    return;
+  }
+
   if (button.dataset.pageGo) {
     navigate(button.dataset.pageGo);
     return;
@@ -656,6 +760,7 @@ root.addEventListener("click", event => {
 
   if (button.dataset.agent !== undefined) {
     state.agentFilter = button.dataset.agent;
+    state.selected = null;
     navigate("agents");
     return;
   }
@@ -668,9 +773,14 @@ root.addEventListener("click", event => {
 
   if (button.dataset.open) {
     state.selected = button.dataset.open;
-    state.agentFilter = "";
-
-    navigate("studio");
+    state.agentFilter = state.calls.find(c => c.key === state.selected)?.agent || "";
+    state.resultTab = "scorecard";
+    navigate("agents");
+    return;
+  }
+  if (button.id === "closeInspection") {
+    state.selected = null;
+    render();
     return;
   }
 
@@ -700,18 +810,33 @@ root.addEventListener("click", event => {
   }
 
   if (button.id === "all") {
-    run(true);
+    run("ready");
     return;
   }
 
   if (button.id === "one") {
-    run(false);
+    run("selected");
+    return;
+  }
+
+  if (button.id === "rerunAll") {
+    if (confirm("Reassess every evaluable interaction? Previous completed assessments will be retained for comparison.")) run("all");
+    return;
+  }
+  if (button.id === "rerunAgent") {
+    if (state.agentFilter && confirm("Reassess all evaluable interactions for " + state.agentFilter + "? Previous completed assessments will be retained.")) run("agent");
     return;
   }
 
   if (button.id === "stopAfter") {
+    if (!state.running) return;
     state.stopAfterCurrent = true;
-    notify("Will stop after the current interaction completes.");
+    state.message = "Stop requested — finishing the current interaction; pending calls will not start";
+    // Update the button and progress area immediately so the request is visible
+    // while the in-flight Gemini request is still processing.
+    render();
+    paintProgress();
+    notify("Stop requested. The current assessment will finish; pending calls stay ready.");
     return;
   }
 
@@ -730,7 +855,9 @@ root.addEventListener("click", event => {
 
   if (button.dataset.criterion) {
     if (!captureCriterionDraft()) return;
-    state.criterion = button.dataset.criterion;
+    // Re-selecting the open parameter collapses its editor.
+    state.criterion = state.criterion === button.dataset.criterion
+      ? null : button.dataset.criterion;
     render();
     return;
   }
@@ -753,7 +880,8 @@ root.addEventListener("click", event => {
     const deterministic = entries.map(input => ({
       id: input.dataset.ruleValue,
       value: input.value.trim() === "" ? NaN : Number(input.value),
-      enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked
+      enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+      operator: root.querySelector('[data-rule-operator="' + input.dataset.ruleValue + '"]')?.value || "<="
     }));
     if (deterministic.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
       notify("Enter a valid non-negative numeric threshold for every rule.", true);
@@ -810,6 +938,35 @@ root.addEventListener(
   async event => {
     const target = event.target;
 
+    if (target.hasAttribute("data-ref-upload")) {
+      const file = target.files?.[0];
+      if (!file) return;
+      try {
+        if (file.size > 500000) throw Error("CSV file exceeds 500 KB");
+        if (!/\.csv$/i.test(file.name)) throw Error("Upload a .csv file");
+        state.references = saveReferenceLibrary(importReferenceDataset(
+          state.references,target.dataset.refUpload,file.name,await file.text()
+        ));
+        render();
+        notify(file.name+" imported and activated. New assessments use the updated references.");
+      } catch(e) {
+        notify("Reference import failed: "+String(e.message||e),true);
+        target.value="";
+      }
+      return;
+    }
+
+    if (target.hasAttribute("data-ref-enabled")) {
+      try {
+        state.references=saveReferenceLibrary(toggleReferenceDataset(
+          state.references,target.dataset.refEnabled,target.checked
+        ));
+        render();
+        notify("Active references saved. New assessments use the updated library.");
+      } catch(e) { notify(e.message,true); }
+      return;
+    }
+
     if (target.id === "file") {
       const file = target.files?.[0];
 
@@ -854,32 +1011,46 @@ root.addEventListener(
       return;
     }
 
-    if (target.dataset.enabled) {
-      const c = state.rubric.criteria.find(
-        x => x.id === target.dataset.enabled
-      );
+    if (target.hasAttribute("data-enabled")) {
+      const id = target.dataset.enabled;
+      if (!setCriterionEnabled(state.rubric, id, target.checked)) return;
 
-      if (c) {
-        c.enabled = target.checked;
-        // Parent selection is independent of saved child check and rule states.
-        // Never silently enable a quantitative rule when toggling its parent.
-
-        // Save All persists this change; do not re-render or reset scroll.
-        const row = target.closest(".rubric-row");
-        const activeChildren = c.checkpoints?.filter(a=>a.enabled===true).length || 0;
-        const activeRules = linkedRules(c.id).filter(id=>
-          state.rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled)).length;
-        row?.classList.toggle("qa-child-active-parent",!c.enabled&&(activeChildren+activeRules)>0);
-        const badge = row?.querySelector(".qa-child-active-badge");
-        if (badge) badge.hidden = c.enabled;
-        else if (!c.enabled && activeChildren + activeRules > 0) {
-          const button = row?.querySelector("[data-criterion]");
-          const expand = button?.querySelector(".qa-expand-indicator");
-          expand?.insertAdjacentHTML("beforebegin",
-            '<span class="qa-child-active-badge" title="Parent unchecked; selected child checks still run">' +
-            (activeChildren + activeRules) + ' active children</span> ');
-        }
+      // Make both qualitative and linked numeric checkboxes respond immediately.
+      // Do not re-render: the user might have unsaved instruction/weight edits.
+      const criterion = state.rubric.criteria.find(c => c.id === id);
+      if (id === state.criterion) {
+        root.querySelectorAll("[data-anchor-enabled]").forEach(input => {
+          const child = criterion.checkpoints?.[Number(input.dataset.anchorEnabled)];
+          input.checked = !!child?.enabled;
+        });
+        root.querySelectorAll("[data-rule-enabled]").forEach(input => {
+          const child = state.rubric.rules.deterministic?.find(r => r.id === input.dataset.ruleEnabled);
+          input.checked = !!child?.enabled;
+        });
       }
+      target.indeterminate = false;
+      updateParentSelectionIndicator(id);
+      return;
+    }
+
+    if (target.hasAttribute("data-anchor-enabled") || target.hasAttribute("data-rule-enabled")) {
+      const criterion = state.rubric.criteria.find(c => c.id === state.criterion);
+      if (!criterion) return;
+      if (target.hasAttribute("data-anchor-enabled")) {
+        const child = criterion.checkpoints?.[Number(target.dataset.anchorEnabled)];
+        if (child) child.enabled = target.checked;
+      } else {
+        const child = state.rubric.rules.deterministic?.find(r => r.id === target.dataset.ruleEnabled);
+        if (child && linkedRules(criterion.id).includes(child.id)) child.enabled = target.checked;
+      }
+      const activeQualitative = criterion.checkpoints?.some(a => a.enabled === true);
+      const activeNumeric = linkedRules(criterion.id).some(id =>
+        state.rubric.rules.deterministic?.some(r => r.id === id && r.enabled === true)
+      );
+      // A partial selection keeps the parent active, but only chosen checks run.
+      criterion.enabled = !!(activeQualitative || activeNumeric);
+      updateParentSelectionIndicator(criterion.id);
+      return;
     }
   }
 );
