@@ -87,13 +87,13 @@ test("real app controller handles paste and shows an enabled Evaluate selected b
   });
   click({ id: "pasteLoad" });
   assert.match(root.innerHTML, /id="one"[^>]*>\s*Evaluate selected/);
-  assert.match(root.innerHTML, /1 new/);
+  assert.doesNotMatch(root.innerHTML, /1 new/);
   assert.match(root.innerHTML, /AGENT\s*\/\s*INTERACTION/);
-  assert.match(element("#notice").textContent, /1 new/);
+  assert.equal(element("#notice").textContent, "");
   // Reimport is not a no-op: the same record stays available for selection.
   element("#paste").value = "Agent: Hello, welcome to SHARE.\nCustomer: Hi, I need help.";
   click({ id: "pasteLoad" });
-  assert.match(root.innerHTML, /1 existing/);
+  assert.doesNotMatch(root.innerHTML, /1 existing/);
 
   // Run a fully synthetic Gemini response, then repeat the same import.
   globalThis.fetch = async (url, opts) => {
@@ -117,5 +117,5 @@ test("real app controller handles paste and shows an enabled Evaluate selected b
   element("#paste").value = "Agent: Hello, welcome to SHARE.\nCustomer: Hi, I need help.";
   click({ id: "pasteLoad" });
   assert.match(root.innerHTML, /Re-evaluate selected/);
-  assert.match(root.innerHTML, /1 existing/);
+  assert.doesNotMatch(root.innerHTML, /1 existing/);
 });
