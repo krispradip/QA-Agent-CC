@@ -650,7 +650,7 @@ root.addEventListener("click", event => {
   }
 
   if (button.id === "clearHistory") {
-    if (state.running || !confirm("Permanently delete saved QAMAFer.AI interaction history from this browser?")) return;
+    if (state.running || !confirm("Permanently delete saved QA.MAFer.AI interaction history from this browser?")) return;
     void clearHistory().then(() => { state.calls = []; state.selected = null; render(); notify("Saved history cleared."); }).catch(e => notify(e.message, true));
     return;
   }
