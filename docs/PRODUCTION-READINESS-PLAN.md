@@ -42,6 +42,43 @@ User (Entra ID / enterprise SSO + RBAC) → QA.MAFer.AI web UI → authenticated
 
 Actual endpoint names and implementations remain an **architecture proposal**, not deployed features.
 
+## Production backlog — Integration Management (DEFERRED)
+
+Tracked in [GitHub issue #6](https://github.com/krispradip/QAAI/issues/6).
+**Do not implement in the current prototype; no Databricks provider integration is approved now.**
+
+Build a secure **Super Admin Integration Management** interface with
+configuration-driven instances and stable adapters. Authorized administrators
+must be able to add, validate, activate, rotate, replace and disable approved
+integrations without changing application source code or committing credentials.
+
+- **LLM providers and model endpoints:** controlled provider selection, model
+  settings, endpoint URL, secure credential entry, evaluator/reviewer assignments,
+  connection testing, JSON-schema capability testing and safe activation/rollback.
+  Databricks is only a possible future approved provider, not a current dependency.
+- **Knowledge bases:** governed reference/knowledge sources, retrieval APIs,
+  file stores and sync/index jobs, with BU/market scope and citations.
+- **Genesys Cloud CX audio and transcripts:** recordings and conversation metadata
+  through approved regional org APIs/OAuth and recording permission controls.
+- **S3 buckets / object storage:** approved audio, transcript and knowledge objects,
+  read/write permissions, region, encryption, prefixes and expiring signed URLs.
+- **Other future integrations:** the same extensible, declarative configuration
+  contracts and adapter registry; only connectors with implemented/approved
+  adapters are selectable. Do not hardcode integrations into QA scorecards/UI.
+
+**Mandatory checks:** admin SSO/RBAC, delegated least-privilege authorization,
+vault-backed write-only masked credentials, HTTPS/host allowlisting and SSRF
+defences, input schema and connectivity/permission checks, environment isolation,
+audit trail, approval/versioning/rollback, encrypted data and token rotation,
+health monitoring, retry/circuit-breaking/rate/cost controls, privacy, consent,
+residency and retention policy. **Never store credentials in browser localStorage
+or return plaintext secrets from an API.**
+
+**Acceptance:** once an integration type is supported, changing its approved
+URL, key, model/endpoint, or connection instance must be possible from the UI
+with no application code edit/deploy. Existing evaluator, validator, scoring,
+rubric, and reporting behaviour must remain stable.
+
 ## Accuracy controls required before operational decisions
 
 - Introduce **checkpoint scope** (opening, entire interaction, closing, contextual; optional window/time offsets) as part of versioned rubric configuration, not in a hard-coded prompt. The LLM may view full transcript for context, but MET evidence must satisfy the configured section.
