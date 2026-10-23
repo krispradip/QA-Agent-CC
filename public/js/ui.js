@@ -479,37 +479,33 @@ export function studio(state) {
               </h3>
             </div>
 
+            <div class="filters">
+                        <input
+                          id="search"
+                          placeholder="Search agent or interaction ID"
+                          value="${esc(search)}">
+            
+                        <select id="filter">
+                          <option value="">All agents</option>
+            
+                          ${[
+                            ...new Set(
+                              calls.map(c => c.agent)
+                            )
+                          ].map(agent => `
+                            <option
+                              value="${esc(agent)}"
+                              ${agent === agentFilter
+                                ? "selected" : ""}>
+                              ${esc(agent)}
+                            </option>
+                          `).join("")}
+                        </select>
+                      </div>
             <div class="studio-queue-actions">
-              <span class="muted">
-                ${count(calls, "DUPLICATE")} duplicates
-                · ${failures} errors
-              </span>
               <button type="button" class="primary studio-open-reports" data-page-go="agents">Open Agents &amp; Reports →</button>
+              <span class="muted">${count(calls, "DUPLICATE")} duplicates · ${failures} errors</span>
             </div>
-          </div>
-
-          <div class="filters">
-            <input
-              id="search"
-              placeholder="Search agent or interaction ID"
-              value="${esc(search)}">
-
-            <select id="filter">
-              <option value="">All agents</option>
-
-              ${[
-                ...new Set(
-                  calls.map(c => c.agent)
-                )
-              ].map(agent => `
-                <option
-                  value="${esc(agent)}"
-                  ${agent === agentFilter
-                    ? "selected" : ""}>
-                  ${esc(agent)}
-                </option>
-              `).join("")}
-            </select>
           </div>
 
           <div class="table-scroll queue">
@@ -520,6 +516,7 @@ export function studio(state) {
                   <th>DURATION</th>
                   <th>QA</th>
                   <th>STATUS</th>
+                  <th>ACTIONS</th>
                 </tr>
               </thead>
 
@@ -544,12 +541,6 @@ export function studio(state) {
                           <b>${esc(c.agent)}</b>
                           <small>${esc(c.id || c.key)}</small>
                         </span>
-                        <button type="button" class="secondary studio-inspect-assessment"
-                          data-open="${esc(c.key)}"
-                          ${c.status === "COMPLETE" && c.findings?.length ? "" : "disabled"}
-                          aria-label="Inspect assessment for ${esc(c.agent)}">
-                          Inspect assessment →
-                        </button>
                       </div>
                     </td>
 
@@ -567,10 +558,18 @@ export function studio(state) {
                     <td>
                       ${chip(c.status)}
                     </td>
+                    <td class="studio-v5-inspect-cell">
+                      <button type="button" class="secondary studio-inspect-assessment"
+                        data-open="${esc(c.key)}"
+                        ${c.status === "COMPLETE" && c.findings?.length ? "" : "disabled"}
+                        aria-label="Inspect assessment for ${esc(c.agent)}">
+                        Inspect assessment →
+                      </button>
+                    </td>
                   </tr>
                 `).join("") || `
                   <tr>
-                    <td colspan="4" class="empty">
+                    <td colspan="5" class="empty">
                       Upload a transcript file to
                       populate this queue.
                     </td>
