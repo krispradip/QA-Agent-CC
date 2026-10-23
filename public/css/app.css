@@ -1473,3 +1473,76 @@ footer {
 .studio-v3 .studio-intake-column>.panel:nth-child(2){margin-top:16px}
 @media(max-width:1050px){.studio-v3 .studio-intake-grid{grid-template-columns:1fr 1fr}.studio-v3 .intake-paste{grid-column:1/-1}}
 @media(max-width:650px){.studio-v3 .studio-intake-grid{grid-template-columns:1fr}.studio-v3 .intake-paste{grid-column:auto}}
+
+/* QUALIS V4 / PREVIEW ONLY — premium visual system */
+:root{--navy:#111943;--teal:#6650ef;--border:#e1e6f5;--muted:#7d87a5;color:#1a2852;background:#f4f6ff}
+body{background:linear-gradient(115deg,#f8f9ff 0%,#f0f4ff 55%,#edf7ff 100%);color:#18264e}
+.sidebar{background:linear-gradient(164deg,#101943 0%,#152258 75%,#23156d 100%);color:#eef1ff;box-shadow:10px 0 28px rgba(25,30,96,.055)}
+.brand-mark{border-radius:15px;background:linear-gradient(135deg,#cc4df3,#6344f3 63%,#2479fc);box-shadow:0 9px 22px rgba(113,60,230,.22)}
+.brand strong{font-weight:850;letter-spacing:-.7px}
+.brand strong span{color:#c6b6ff}
+.nav-caption{color:#8fa3e3}
+nav button{color:#c8d1f7;transition:background .2s ease,transform .2s ease}
+nav button span{color:#c6b5ff}
+nav button.active,nav button:hover{background:linear-gradient(100deg,#3b6df5,#6347eb);box-shadow:0 8px 20px rgba(24,30,130,.22);transform:translateX(1px)}
+.sidebar-bottom{border-top-color:#445087;color:#d8ddff}
+.sidebar-bottom small{color:#a9b8e7}
+.main{max-width:none;background:transparent}
+.topbar{padding-bottom:12px}
+.topbar h1{color:#111e4d;font-size:clamp(25px,2.25vw,35px)}
+.eyebrow,.kicker{color:#6552d9}
+#page-sub{color:#7483a8}
+.header-tag,.tag{background:#f0edff;border-color:#ded6ff;color:#6449d8}
+.avatar{background:linear-gradient(135deg,#6e4afb,#8d52de);color:#fff}
+.panel,.metric{border-radius:17px;border-color:#e0e5f3;box-shadow:0 8px 30px rgba(36,45,108,.045)}
+.panel-heading h3{color:#1a2852}
+.primary{background:linear-gradient(100deg,#435eff,#6b39eb);box-shadow:0 5px 15px rgba(83,75,222,.15)}
+.primary:hover:not(:disabled){background:linear-gradient(100deg,#324ded,#5d32d8)}
+.secondary{background:#fff;border-color:#dde3f7;color:#4545a0}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline-color:#7963ef}
+.hero{background:radial-gradient(circle at 80% 40%,#383b9c,#19265a 48%,#111943 100%)}
+.hero em{color:#b8a7ff}
+.hero-logo span{border-color:#ad99ff;color:#d8cfff}
+.hero .eyebrow{color:#aea0ff}
+.notice{background:#f2f1ff;border-color:#dedbff;color:#5145ac}
+.studio-intro{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:14px}
+.studio-intro h2{font-size:clamp(25px,2.6vw,36px);letter-spacing:-1.15px;margin:6px 0;color:#111e4a}
+.studio-intro p{margin:0;color:#7481a3;font-size:12px}
+.studio-trust{display:flex;align-items:center;gap:10px;padding:12px;border-radius:13px;background:linear-gradient(115deg,#e9fafa,#f0f1ff);border:1px solid #dae6fc;color:#29356b}
+.studio-trust strong{font-size:11px;display:block}
+.studio-trust small{display:block;font-size:10px;color:#7c8aae;margin-top:3px}
+.studio-trust-icon{display:grid;place-items:center;border-radius:50%;width:32px;height:32px;flex:none;background:#15aa8e;color:white;font-weight:800;font-size:19px}
+.studio-trust-head{max-width:285px;font-weight:750;font-size:11px}
+.studio-v4{display:flex!important;flex-direction:column;gap:14px}
+.studio-v4 .studio-intake-column{width:100%}
+.studio-v4 .studio-intake-panel{margin-bottom:0;background:linear-gradient(130deg,#fff,#f5f5ff 65%,#f0fbff)}
+.studio-v4 .studio-intake-grid{grid-template-columns:1.15fr 1fr 1fr;gap:12px}
+.studio-v4 .studio-intake-grid .intake-tile{padding:12px 14px}
+.studio-v4 .studio-intake-grid .upload{min-height:105px}
+.studio-v4 .intake-tile textarea{min-height:82px}
+.studio-v4 .studio-evaluator-row{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(290px,1fr);gap:14px;align-items:stretch}
+.studio-v4 .studio-evaluator-main,.studio-v4 .studio-evaluator-side{min-width:0}
+.studio-v4 .studio-evaluator-main .ai-panel{height:100%;min-height:305px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 51% 48%,#f3ebff 0%,#eff4ff 52%,#e5f8ff 100%);border:1px solid #d9ddff;margin:0;box-shadow:0 11px 35px rgba(79,81,188,.1)}
+.studio-v4 .ai-panel .orb-field{transform:scale(1.13);margin-block:8px}
+.studio-v4 .ai-panel .orb{animation:qualisGlow 4.5s ease-in-out infinite}
+@keyframes qualisGlow{0%,100%{box-shadow:0 0 20px #644bf445,0 0 55px #7b5cff31}50%{box-shadow:0 0 48px #634cf9a0,0 0 98px #7b5cff5c}}
+@media(prefers-reduced-motion:reduce){.studio-v4 .ai-panel .orb{animation:none}}
+.studio-v4 .studio-evaluator-side{display:flex;flex-direction:column;gap:10px}
+.studio-v4 .studio-evaluator-side .panel{margin:0;padding:14px 16px}
+.studio-v4 .studio-eval-details dl{margin:10px 0 0}
+.studio-v4 .studio-eval-details dl>div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #ecedf7}
+.studio-v4 .studio-eval-details dt{font-size:11px;color:#7b87a7}
+.studio-v4 .studio-eval-details dd{margin:0;font-size:11px;font-weight:750;text-align:right;color:#28336c}
+.studio-v4 .studio-evaluator-side .progress-numbers{margin-top:10px}
+.studio-v4 .studio-evaluator-side .footnote{font-size:10px}
+.studio-v4 .studio-queue-row>.panel{margin:0}
+.studio-v4 .studio-queue-row .queue{max-height:220px;overflow:auto}
+.studio-v4 .studio-hint-row{display:none}
+.studio-results{margin-top:15px;background:linear-gradient(135deg,#fff,#fcfcff);border-color:#dfe3f6}
+.studio-v4 .intake-step{background:#6650ef}
+.studio-v4 .intake-file .intake-step{background:#0ba997}
+.studio-v4 .intake-audio .intake-step{background:#ee963b}
+.studio-v4 .toolbar{display:flex;gap:7px;flex-wrap:wrap}
+.studio-v4 .toolbar button{padding:10px 13px}
+@media(max-width:1060px){.studio-v4 .studio-evaluator-row{grid-template-columns:1fr}.studio-v4 .studio-evaluator-side{display:grid;grid-template-columns:1fr 1fr}.studio-v4 .studio-evaluator-side>.studio-trust{grid-column:1/-1}}
+@media(max-width:780px){.studio-intro{align-items:flex-start;flex-direction:column}.studio-v4 .studio-intake-grid{grid-template-columns:1fr}.studio-v4 .studio-evaluator-side{grid-template-columns:1fr}}
