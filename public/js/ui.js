@@ -386,8 +386,9 @@ export function studio(state) {
 
             <button class="secondary"
               id="stopAfter"
-              ${running ? "" : "disabled"}>
-              Finish current & stop
+              ${running && !state.stopAfterCurrent ? "" : "disabled"}
+              aria-pressed="${state.stopAfterCurrent ? "true" : "false"}">
+              ${state.stopAfterCurrent ? "✓ Stop requested" : "Finish current & stop"}
             </button>
             <button class="secondary"
               id="stop"
@@ -445,6 +446,10 @@ export function studio(state) {
             <div style="width:${pct}%"></div>
           </div>
 
+          ${running && state.stopAfterCurrent ? `
+            <p class="qa-stop-pending" role="status" aria-live="polite">
+              ✓ Stop requested — completing the current interaction. No more interactions will start. Completed results will be retained.
+            </p>` : ""}
           <div class="qa-timing-status" id="qa-timing-status" aria-live="off">
             <span>Elapsed <strong id="qa-elapsed">00:00</strong></span>
             <span>ETA <strong id="qa-eta">Calculating…</strong></span>
@@ -1016,10 +1021,8 @@ function renderCriterionEditor(c, rubric) {
 }
 
 export function configuration(rubric, selected) {
-  const c =
-    rubric.criteria.find(x =>
-      x.id === selected
-    ) || rubric.criteria[0];
+  // Null selection means every parameter is collapsed.
+  const c = rubric.criteria.find(x => x.id === selected) || null;
 
   return `
     <div class="configuration">
@@ -1040,7 +1043,7 @@ export function configuration(rubric, selected) {
         </div>
 
         <p class="muted">
-          Select a parameter to expand its evaluation checks. Configure each check and its points, then save. Settings persist in this browser.
+          Use + to expand a parameter and − to collapse it. Configure the checks and points, then save. Settings persist in this browser.
         </p>
 
         ${GROUPS.map(group => `
@@ -1067,7 +1070,7 @@ export function configuration(rubric, selected) {
                   rubric.rules.deterministic?.some(r=>r.id===id&&r.enabled)).length;
                 const childActive = activeChildren + activeRules;
                 return `
-                <div class="rubric-row ${x.id === c.id ? "on" : ""} ${!x.enabled && childActive ? "qa-child-active-parent" : ""}">
+                <div class="rubric-row ${x.id === c?.id ? "on" : ""} ${!x.enabled && childActive ? "qa-child-active-parent" : ""}">
                   <input
                     type="checkbox"
                     data-enabled="${esc(x.id)}"
@@ -1075,11 +1078,11 @@ export function configuration(rubric, selected) {
                     aria-label="Enable ${esc(x.name)}">
 
                   <button
-                    data-criterion="${esc(x.id)}" aria-expanded="${x.id === c.id}">
-                    ${esc(criterionLabel(x,rubric))} ${!x.enabled && childActive ? `<span class="qa-child-active-badge" title="Parent unchecked; selected child checks still run">${childActive} active ${childActive===1?"child":"children"}</span>` : ""} <span class="qa-expand-indicator">${x.id === c.id ? "−" : "+"}</span>
+                    data-criterion="${esc(x.id)}" aria-expanded="${x.id === c?.id}">
+                    ${esc(criterionLabel(x,rubric))} ${!x.enabled && childActive ? `<span class="qa-child-active-badge" title="Parent unchecked; selected child checks still run">${childActive} active ${childActive===1?"child":"children"}</span>` : ""} <span class="qa-expand-indicator">${x.id === c?.id ? "−" : "+"}</span>
                   </button>
                 </div>
-                ${x.id === c.id ? renderCriterionEditor(c, rubric) : ""}
+                ${x.id === c?.id ? renderCriterionEditor(c, rubric) : ""}
               `; }).join("")}
           </div>
         `).join("")}
