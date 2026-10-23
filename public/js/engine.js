@@ -127,25 +127,35 @@ function executeRule(call,def,rule,rules) {
  if(!Number.isFinite(limit)||limit<0)return unknown("Invalid rule threshold");
  const turns=call.turns||[];
  if(id==="greeting_time"||id==="fallback_greeting"){
-  // QA-GREETING-ASR-001 | Genesys Arabic ASR often truncates the final
-  // pronoun in "شكرا لاتصالك" or inserts ellipses. Match the stable
-  // greeting phrase without requiring an exact final character.
-  const normalizeGreeting=x=>String(x||"").toLowerCase()
+  // Compare the first identifiable spoken greeting against elapsed interaction
+  // time. Arabic ASR can vary punctuation, diacritics and wording.
+  const normalize=x=>String(x||"").toLowerCase()
     .replace(/[\u064b-\u065f\u0670\u0640]/g,"")
     .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,"")
     .replace(/[^\p{L}\p{N}]+/gu," ").trim().replace(/\s+/g," ");
-  const first=turns.filter(t=>t.speaker==="agent").find(t=>{
-    const spoken=normalizeGreeting(t.text);
-    return (rules.greetingTerms||[]).some(term=>{
-      const configured=normalizeGreeting(term);
-      return configured && (spoken.includes(configured) ||
-        (configured==="شكرا لاتصالك" && spoken.includes("شكرا لاتصال")));
-    });
-  });
-  if(!first||typeof first.seconds!=="number"||!Number.isFinite(first.seconds))
-   return unknown("Timestamped greeting is not available");
-  return {id,text:def.name,method:"quantitative",state:first.seconds<=limit?"MET":"MISSED",
-   reason:"Greeting at "+first.timestamp+" ("+first.seconds+"s); threshold "+limit+"s",
+  const greetingTerms=(rules.greetingTerms||[]).map(normalize).filter(Boolean);
+  if(!greetingTerms.length)return unknown("Greeting vocabulary is not configured");
+  const isGreeting=text=>{
+    const spoken=normalize(text);
+    return greetingTerms.some(term=>spoken.includes(term) ||
+      (term==="شكرا لاتصالك" && spoken.includes("شكرا لاتصال"))) ||
+      /(?:^| )(?:اهلا|مرحبا|السلام عليكم|وعليكم السلام|شكرا لاتصال|شكرا على اتصال|شكرا على تواصلك)(?: |$)/u.test(spoken);
+  };
+  const first=turns.find(t=>t.speaker==="agent"&&isGreeting(t.text));
+  if(!first)return unknown("No recognizable agent greeting in transcript");
+  // Parsed elapsed seconds are preferred; reparse MM:SS or HH:MM:SS only
+  // when the transcript carries a valid elapsed timestamp.
+  const elapsed=Number.isFinite(first.seconds)?first.seconds:(()=>{
+    const m=String(first.timestamp||"").trim().match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+    if(!m)return null;
+    const n=m[3]===undefined?Number(m[1])*60+Number(m[2]):
+      Number(m[1])*3600+Number(m[2])*60+Number(m[3]);
+    return Number.isFinite(n)?n:null;
+  })();
+  if(elapsed===null||elapsed<0)
+    return unknown("Recognizable greeting found, but elapsed timing is unavailable");
+  return {id,text:def.name,method:"quantitative",state:elapsed<=limit?"MET":"MISSED",
+   reason:"Greeting at "+first.timestamp+" ("+elapsed+"s); threshold "+limit+"s",
    evidence:[{line:first.line,quote:first.text}]};
  }
  if(phrases[id]){
