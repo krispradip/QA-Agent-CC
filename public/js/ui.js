@@ -966,7 +966,7 @@ function renderCriterionEditor(c, rubric) {
     const points=c.ruleWeights?.[id]??1;
     return `<div class="qa-check-row">
       <label class="qa-check-name"><input type="checkbox" data-rule-enabled="${esc(id)}" ${setting.enabled?"checked":""}><span>${esc(def.name)}</span></label>
-      <label class="qa-check-value"><small>Threshold (${esc(def.unit)})</small><input type="number" min="0" step="any" data-rule-value="${esc(id)}" value="${esc(setting.value)}"></label>
+      <label class="qa-check-value"><small>Comparison</small><select data-rule-operator="${esc(id)}">${[["<=","At most (≤)"],["<","Less than (<)"],[">=","At least (≥)"],[">","Greater than (>)"],["==","Exactly (=)"],["!=","Not equal (≠)"]].map(([value,label])=>`<option value="${esc(value)}" ${(setting.operator || (["mandatory_greeting","mandatory_disclosure","closing_statement","verification_steps","ticket_creation","disposition_match","recording_compliance","first_contact_resolution"].includes(id)?">=":"<="))===value?"selected":""}>${esc(label)}</option>`).join("")}</select></label><label class="qa-check-value"><small>Threshold (${esc(def.unit)})</small><input type="number" min="0" step="any" data-rule-value="${esc(id)}" value="${esc(setting.value)}"></label>
       <label class="qa-check-points"><small>Points</small><input type="number" min="0" max="100" step="0.5" data-rule-points="${esc(id)}" value="${esc(points)}"></label>
       <small class="qa-check-help">${esc(def.description)} · ${esc(def.source)} evidence</small>
     </div>`;
