@@ -1678,3 +1678,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
  .studio-v4 .studio-evaluator-main .qmf-evaluator{min-height:340px!important;padding:14px!important}
  .studio-v4 .qmf-eval-visual{height:195px;transform:scale(.78)}
 }
+
+/* QA-SEMANTIC-STATUS: outcome colors are independent of brand styling. */
+.state-met,.anchor-state.state-met{background:#e7f5ec!important;color:#176a3a!important;border:1px solid #bde4ca!important}
+.state-missed,.anchor-state.state-missed{background:#fde9eb!important;color:#b42332!important;border:1px solid #f3c4ca!important}
+.qmf-anchor-counts span:first-child{color:#176a3a!important}
+.qmf-anchor-counts span:nth-child(2){color:#b42332!important}
+.qmf-highlight.positive>span{color:#176a3a!important;background:#e7f5ec!important}
+.qmf-highlight.improvement>span{color:#b42332!important;background:#fde9eb!important}
+.qa-method-tag{color:#59636d}
