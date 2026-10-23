@@ -149,7 +149,7 @@ export function overview(calls, rubric, selectedAgent = "", period = { mode:"all
     <section class="hero">
       <div>
         <div class="eyebrow">
-          QUALIS / QUALITY CONTROL CENTRE
+          QAMAFer.AI / QUALITY INTELLIGENCE
         </div>
 
         <h2>
@@ -590,7 +590,7 @@ export function studio(state) {
 
           <p>
             The model checks rubric behaviours.
-            Qualis calculates criterion scores
+            QAMAFer.AI calculates criterion scores
             using fixed checkpoint rules.
             Missing evidence stays unscored.
           </p>
