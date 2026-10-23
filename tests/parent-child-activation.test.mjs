@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { defaultRubric, linkedRules, setCriterionEnabled, enforceParentSelection } from "../public/js/config.js";
+import { defaultRubric, linkedRules, setCriterionEnabled, enforceParentSelection, saveRubric, loadRubric } from "../public/js/config.js";
 import { configuration } from "../public/js/ui.js";
 import { assess } from "../public/js/engine.js";
 
@@ -93,4 +93,26 @@ test("Individual qualitative check selection is respected in Gemini payload",asy
     assert.deepEqual(payload.criteria[0].checkpoints.map(c=>c.id),["pace-1"]);
     assert.equal(sample.meta.criteria[0].checkpoints[1].enabled,false);
   } finally {globalThis.fetch=priorFetch;}
+});
+
+test("Save then reload persists the parent and both child checkbox states",()=>{
+  const existing=globalThis.localStorage;
+  const store=new Map();
+  globalThis.localStorage={
+    getItem:key=>store.get(key)||null,
+    setItem:(key,value)=>store.set(key,value)
+  };
+  try{
+    const rubric=defaultRubric();
+    setCriterionEnabled(rubric,"pace",false);
+    saveRubric(rubric);
+    const loaded=loadRubric();
+    assert.equal(parent(loaded,"pace").enabled,false);
+    assert.deepEqual(parent(loaded,"pace").checkpoints.map(a=>a.enabled),[false,false]);
+    setCriterionEnabled(loaded,"pace",true);
+    saveRubric(loaded);
+    const restored=loadRubric();
+    assert.equal(parent(restored,"pace").enabled,true);
+    assert.deepEqual(parent(restored,"pace").checkpoints.map(a=>a.enabled),[true,true]);
+  } finally {globalThis.localStorage=existing;}
 });
