@@ -317,7 +317,6 @@ export function studio(state) {
     );
 
   return `
-    <div class="studio-intro"><div><span class="kicker">AI EVALUATION STUDIO</span><h2>Evaluate interactions with AI</h2><p>Import conversations and turn them into evidence-linked quality intelligence.</p></div></div>
     <div class="studio studio-v3 studio-v4">
       <div class="studio-intake-column">
         <section class="panel studio-intake-panel">
