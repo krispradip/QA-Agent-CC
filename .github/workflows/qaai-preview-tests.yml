@@ -1,9 +1,13 @@
-name: QA.MAFer.AI Preview Regression Tests
+name: QA.MAFer.AI Regression Tests
 
 on:
   push:
     branches:
       - feature/evaluation-studio-redesign
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -13,7 +17,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out test branch
+      - name: Check out repository
         uses: actions/checkout@v4
       - name: Set up Node
         uses: actions/setup-node@v4
