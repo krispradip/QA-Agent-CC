@@ -580,6 +580,7 @@ function captureCriterionDraft() {
   const editedRules = [...root.querySelectorAll("[data-rule-value]")].map(input => ({
     id: input.dataset.ruleValue,
     enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+    operator: root.querySelector('[data-rule-operator="' + input.dataset.ruleValue + '"]')?.value || "<=",
     value: input.value.trim() === "" ? NaN : Number(input.value)
   }));
   if (editedRules.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
@@ -766,7 +767,8 @@ root.addEventListener("click", event => {
     const deterministic = entries.map(input => ({
       id: input.dataset.ruleValue,
       value: input.value.trim() === "" ? NaN : Number(input.value),
-      enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked
+      enabled: !!root.querySelector('[data-rule-enabled="' + input.dataset.ruleValue + '"]')?.checked,
+      operator: root.querySelector('[data-rule-operator="' + input.dataset.ruleValue + '"]')?.value || "<="
     }));
     if (deterministic.some(x => !Number.isFinite(x.value) || x.value < 0 || x.value > 1000000)) {
       notify("Enter a valid non-negative numeric threshold for every rule.", true);
