@@ -28,6 +28,8 @@ import {
 } from "./engine.js";
 import { loadHistory, saveHistory, mergeImported, clearHistory } from "./history.js";
 import { applyPeriod } from "./reporting.js";
+import {loadReferenceLibrary, saveReferenceLibrary, importReferenceDataset, toggleReferenceDataset, deleteReferenceDataset, csvTemplate, activeReferenceEntries} from "./reference.js";
+import {configShell, referenceLibraryView} from "./reference-ui.js";
 
 import {
   overview,
@@ -54,6 +56,8 @@ const state = {
   resultTab: "scorecard",
 
   rubric: loadRubric(),
+  references: loadReferenceLibrary(),
+  configTab: "rubric",
 
   criterion: "greet7",
   stopAfterCurrent: false,
@@ -83,8 +87,8 @@ const titles = {
   ],
 
   config: [
-    "QA Configuration",
-    "Edit the rubric checkpoints, rules and AI evaluator."
+    "Config",
+    "Manage QA scoring parameters and approved evaluation reference materials."
   ]
 };
 
@@ -95,7 +99,7 @@ const titles = {
 function render() {
   const preserveScroll = state.page === "config";
   const previousY = preserveScroll ? window.scrollY : 0;
-  const previousPanel = preserveScroll ? root.querySelector(".configuration .index") : null;
+  const previousPanel = preserveScroll && state.configTab === "rubric" ? root.querySelector(".configuration .index") : null;
   const previousPanelY = previousPanel?.scrollTop || 0;
   const [title, sub] = titles[state.page];
 
@@ -121,13 +125,14 @@ function render() {
         : state.page === "agents"
           ? agentsView(state)
 
-          : configuration(
-              state.rubric,
-              state.criterion
+          : configShell(state.configTab,
+              state.configTab === "rubric"
+                ? configuration(state.rubric,state.criterion)
+                : referenceLibraryView(state.references)
             );
 
   filterRows();
-  if (state.page === "config") {
+  if (state.page === "config" && state.configTab === "rubric") {
     for (const criterion of state.rubric.criteria) updateParentSelectionIndicator(criterion.id);
   }
   if (state.page === "studio") paintProgress();
@@ -361,6 +366,7 @@ async function run(scope = "ready") {
    * Lock the rubric during this batch.
    */
   const snapshot = clone(state.rubric);
+  const referenceSnapshot = clone(state.references);
 
   state.stopAfterCurrent = false;
   state.running = true;
@@ -405,7 +411,12 @@ async function run(scope = "ready") {
           call,
           snapshot,
           state.controller.signal,
-          stage
+          stage,
+          {
+            revision: referenceSnapshot.revision,
+            entries: activeReferenceEntries(referenceSnapshot,call,
+              snapshot.criteria.filter(c=>c.enabled===true)),
+          }
         );
 
       } catch (err) {
@@ -691,6 +702,39 @@ root.addEventListener("click", event => {
 
   if (!button) return;
 
+  if (button.dataset.configTab) {
+    if (state.configTab === button.dataset.configTab) return;
+    if (state.configTab === "rubric" && !captureCriterionDraft()) return;
+    state.configTab = button.dataset.configTab;
+    render();
+    return;
+  }
+
+  if (button.dataset.refTemplate) {
+    const type = button.dataset.refTemplate;
+    const content = csvTemplate(type);
+    const blob = new Blob([content], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "qaai-"+type+"-reference-template.csv";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  if (button.hasAttribute("data-ref-delete")) {
+    if (!confirm("Delete this stored reference version from this browser?")) return;
+    try {
+      state.references = saveReferenceLibrary(deleteReferenceDataset(state.references,button.dataset.refDelete));
+      render();
+      notify("Reference version deleted. Future assessments use active files only.");
+    } catch(e) { notify(e.message,true); }
+    return;
+  }
+
   if (button.dataset.resultTab) {
     state.resultTab = button.dataset.resultTab;
     render();
@@ -893,6 +937,35 @@ root.addEventListener(
   "change",
   async event => {
     const target = event.target;
+
+    if (target.hasAttribute("data-ref-upload")) {
+      const file = target.files?.[0];
+      if (!file) return;
+      try {
+        if (file.size > 500000) throw Error("CSV file exceeds 500 KB");
+        if (!/\.csv$/i.test(file.name)) throw Error("Upload a .csv file");
+        state.references = saveReferenceLibrary(importReferenceDataset(
+          state.references,target.dataset.refUpload,file.name,await file.text()
+        ));
+        render();
+        notify(file.name+" imported and activated. New assessments use the updated references.");
+      } catch(e) {
+        notify("Reference import failed: "+String(e.message||e),true);
+        target.value="";
+      }
+      return;
+    }
+
+    if (target.hasAttribute("data-ref-enabled")) {
+      try {
+        state.references=saveReferenceLibrary(toggleReferenceDataset(
+          state.references,target.dataset.refEnabled,target.checked
+        ));
+        render();
+        notify("Active references saved. New assessments use the updated library.");
+      } catch(e) { notify(e.message,true); }
+      return;
+    }
 
     if (target.id === "file") {
       const file = target.files?.[0];
