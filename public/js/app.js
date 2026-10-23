@@ -151,6 +151,22 @@ function updateParentSelectionIndicator(id) {
   input.checked = criterion.enabled === true;
   input.indeterminate = criterion.enabled === true && selected > 0 && selected < checks.length;
   input.setAttribute("aria-checked", input.indeterminate ? "mixed" : String(input.checked));
+
+  // Keep the active-child count accurate without re-rendering draft text fields.
+  const button = input.closest(".rubric-row")?.querySelector("[data-criterion]");
+  if (!button) return;
+  let badge = button.querySelector(".qa-child-active-badge");
+  if (!input.indeterminate) {
+    badge?.remove();
+  } else {
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "qa-child-active-badge";
+      badge.title = "Only selected child checks will be assessed";
+      button.querySelector(".qa-expand-indicator")?.before(badge);
+    }
+    badge.textContent = selected + "/" + checks.length + " active";
+  }
 }
 
 /**
