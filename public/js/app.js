@@ -200,6 +200,12 @@ function navigate(page) {
 
   state.page = page;
   render();
+  // A page change should never inherit the scroll position of the Studio.
+  // This applies to top navigation, Agents & Reports and Inspect assessment.
+  window.scrollTo(0, 0);
+  if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+  const main = document.querySelector(".main");
+  if (main) main.scrollTop = 0;
 }
 
 /**
@@ -268,20 +274,19 @@ function load(text, filename) {
   state.search = "";
   state.phase = "idle";
 
-  const ready = state.calls.filter(
-    c => c.status === "READY"
-  ).length;
-
-  const complete = state.calls.filter(c => c.status === "COMPLETE").length;
-  state.message = `${merged.added} new · ${merged.alreadyKnown} existing · ${merged.skipped} duplicates · ${ready} ready · ${complete} completed`;
-  state.importFeedback = state.message + (merged.alreadyKnown
-    ? " · Existing evaluations retained; select Re-evaluate to assess again."
-    : " · Select Evaluate to start assessment.");
+  // Import counts already appear in the queue and progress tiles.
+  // Keep successful intake silent to avoid a redundant full-width banner
+  // and long status text inside the AI evaluator animation.
+  state.message = "";
+  state.importFeedback = "";
+  const notice = $("#notice");
+  if (notice && !notice.classList.contains("error-note")) {
+    notice.textContent = "";
+  }
 
   // Save only after any manual speaker mapping has completed.
   void persist();
   render();
-  notify(state.importFeedback);
 }
 
 const clone = value =>
