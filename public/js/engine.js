@@ -154,7 +154,7 @@ export function executeRule(call,def,rule,rules) {
   })();
   if(elapsed===null||elapsed<0)
     return unknown("Recognizable greeting found, but elapsed timing is unavailable");
-  return {id,text:def.name,method:"quantitative",state:elapsed<=limit?"MET":"MISSED",
+  return {id,text:def.name,method:"quantitative",state:(rule.operator===">="?elapsed>=limit:rule.operator===">"?elapsed>limit:rule.operator==="<"?elapsed<limit:rule.operator==="=="?elapsed===limit:rule.operator==="!="?elapsed!==limit:elapsed<=limit)?"MET":"MISSED",
    reason:"Greeting at "+first.timestamp+" ("+elapsed+"s); threshold "+limit+"s",
    evidence:[{line:first.line,quote:first.text}]};
  }
@@ -165,7 +165,10 @@ export function executeRule(call,def,rule,rules) {
   if(!turns.length)return unknown("Transcript is missing");
   const matches=turns.filter(t=>t.speaker==="agent"&&terms.some(term=>
    term&&t.text.toLowerCase().includes(String(term).toLowerCase())));
-  const met=id==="prohibited_phrase"?matches.length<=limit:matches.length>=limit;
+  const operator=rule.operator || (id==="prohibited_phrase"?"<=":">=");
+  const comparisons={">=":matches.length>=limit,">":matches.length>limit,"<=":matches.length<=limit,"<":matches.length<limit,"==":matches.length===limit,"!=":matches.length!==limit};
+  if(!Object.hasOwn(comparisons,operator))return unknown("Invalid configured comparison operator");
+  const met=comparisons[operator];
   return {id,text:def.name,method:"quantitative",state:met?"MET":"MISSED",
    reason:matches.length+" matching agent turns; threshold "+limit,
    evidence:matches.map(t=>({line:t.line,quote:t.text}))};
@@ -188,9 +191,12 @@ export function executeRule(call,def,rule,rules) {
  }else value=raw;
  if(typeof value!=="number"||!Number.isFinite(value)||value<0)
   return unknown("Invalid "+spec[0]+" evidence");
- const met=minimum.has(id)?value>=limit:value<=limit;
+ const operator=rule.operator || (minimum.has(id)?">=":"<=");
+ const comparisons={">=":value>=limit,">":value>limit,"<=":value<=limit,"<":value<limit,"==":value===limit,"!=":value!==limit};
+ if(!Object.hasOwn(comparisons,operator))return unknown("Invalid configured comparison operator");
+ const met=comparisons[operator];
  return {id,text:def.name,method:"quantitative",state:met?"MET":"MISSED",
-  reason:"Observed "+value+"; threshold "+limit,
+  reason:"Observed "+value+" "+(met?"satisfies ":"does not satisfy ")+operator+" "+limit,
   evidence:[{line:0,quote:"Verified interaction evidence: "+spec[0]+" = "+value}]};
 }
 function combineCriterion(criterion,ai,checks){
