@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { defaultRubric } from "../public/js/config.js";
-import { configuration, studio } from "../public/js/ui.js";
+import { configuration, studio, overview } from "../public/js/ui.js";
 
 test("QA Configurator has a collapsed state and no editor after closing a parameter", () => {
   const rubric = defaultRubric();
@@ -157,4 +157,15 @@ test("Studio layout CSS locks a true circle and preserves a one-row scrollable t
   assert.match(css,/\.studio-v5 \.studio-v5-upload-stack\{[^}]*grid-template-rows:repeat\(2/);
   assert.match(css,/\.studio-v5 \.studio-v5-toolbar\{[^}]*flex-wrap:nowrap/);
   assert.match(css,/\.studio-v5 \.studio-v5-toolbar\{[^}]*overflow-x:auto/);
+});
+
+test("Home hero retains approved copy without the decorative Q logo", () => {
+  const html=overview([], defaultRubric());
+  const hero=html.slice(html.indexOf('<section class="hero">'),html.indexOf('</section>'));
+  assert.match(hero,/QA\.MAFer\.AI \/ QUALITY INTELLIGENCE/);
+  assert.match(hero,/Every conversation\./);
+  assert.match(hero,/A clearer quality picture\./);
+  assert.match(hero,/Assess complete Genesys exports, trace every/);
+  assert.match(hero,/improve with defensible evidence\./);
+  assert.doesNotMatch(hero,/hero-logo|<span>Q<\/span>|EVIDENCE → QUALITY/);
 });
