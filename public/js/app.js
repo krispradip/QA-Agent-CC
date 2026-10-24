@@ -31,6 +31,7 @@ import { applyPeriod } from "./reporting.js";
 import {loadReferenceLibrary, saveReferenceLibrary, importReferenceDataset, toggleReferenceDataset, deleteReferenceDataset, csvTemplate, activeReferenceEntries} from "./reference.js";
 import {configShell, referenceLibraryView} from "./reference-ui.js";
 import { scrollPageToTop } from "./navigation.js";
+import { progressLabels, readProgress, saveProgress, clearProgress } from "./progress.js";
 
 import {
   overview,
@@ -64,6 +65,7 @@ const state = {
   stopAfterCurrent: false,
   running: false,
   phase: "idle",
+  evalProgress: readProgress(typeof localStorage === "undefined" ? null : localStorage),
 
   message:
     "Upload a Genesys file or load the synthetic example",
@@ -251,6 +253,12 @@ function load(text, filename) {
     throw Error("No usable interactions found. Check speaker labels and transcript format.");
   }
   state.calls = merged.calls;
+  if (merged.added > 0) {
+    // A changed interaction set is a new batch; older run timing is no
+    // longer representative of the current queue.
+    state.evalProgress = null;
+    clearProgress(typeof localStorage === "undefined" ? null : localStorage);
+  }
 
   // Transcript import never interrupts the user with a browser prompt.
   // Clearly labelled speakers are resolved automatically by the parser.
@@ -336,18 +344,18 @@ function stage(phase, call) {
 // Do not fabricate percentage completion for an in-flight Gemini request.
 let progressClock = null;
 function paintProgress() {
-  const p = state.evalProgress;
-  const elapsed = root.querySelector("#qa-elapsed");
-  const eta = root.querySelector("#qa-eta");
-  const count = root.querySelector("#qa-batch-count");
-  if (!p || !elapsed || !eta || !count) return;
-  const seconds = Math.max(0,Math.floor((Date.now()-p.started)/1000));
-  const format = n=>String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");
-  elapsed.textContent = format(seconds);
-  count.textContent = p.completed+" / "+p.total+" processed";
-  eta.textContent = p.completed>0 && p.completed<p.total
-    ? "~"+format(Math.ceil(seconds/p.completed*(p.total-p.completed)))
-    : p.completed===p.total ? "00:00" : "Calculating…";
+  const elapsed=root.querySelector("#qa-elapsed");
+  const eta=root.querySelector("#qa-eta");
+  const count=root.querySelector("#qa-batch-count");
+  if (!elapsed||!eta||!count) return;
+  const handled=state.calls.filter(c =>
+    ["COMPLETE","ERROR","NO_TRANSCRIPT","DUPLICATE"].includes(c.status)).length;
+  const labels=progressLabels(state.evalProgress,{
+    callCount:state.calls.length,handled
+  });
+  elapsed.textContent=labels.elapsed;
+  eta.textContent=labels.eta;
+  count.textContent=labels.count;
 }
 async function run(scope = "ready") {
   if (state.running) return;
@@ -374,7 +382,9 @@ async function run(scope = "ready") {
 
   state.stopAfterCurrent = false;
   state.running = true;
-  state.evalProgress = {started:Date.now(),total:target.length,completed:0};
+  state.evalProgress = {started:Date.now(),total:target.length,completed:0,callCount:state.calls.length};
+  // Never display an older completed cycle as the timing of a new one.
+  clearProgress(typeof localStorage === "undefined" ? null : localStorage);
   if (progressClock) clearInterval(progressClock);
   progressClock = setInterval(paintProgress,1000);
   state.controller = new AbortController();
@@ -469,6 +479,9 @@ async function run(scope = "ready") {
     state.running = false;
     state.stopAfterCurrent = false;
     state.controller = null;
+    state.evalProgress.ended=Date.now();
+    state.evalProgress.outcome=quota?"quota":stopped?"stopped":"complete";
+    saveProgress(typeof localStorage === "undefined" ? null : localStorage,state.evalProgress);
 
     state.phase = quota
       ? "error"
@@ -752,7 +765,7 @@ root.addEventListener("click", event => {
 
   if (button.id === "clearHistory") {
     if (state.running || !confirm("Permanently delete saved QA.MAFer.AI interaction history from this browser?")) return;
-    void clearHistory().then(() => { state.calls = []; state.selected = null; render(); notify("Saved history cleared."); }).catch(e => notify(e.message, true));
+    void clearHistory().then(() => { state.calls = []; state.selected = null; state.evalProgress = null; clearProgress(typeof localStorage === "undefined" ? null : localStorage); render(); notify("Saved history cleared."); }).catch(e => notify(e.message, true));
     return;
   }
 
@@ -799,6 +812,8 @@ root.addEventListener("click", event => {
     if (!confirm("Remove all interactions, transcripts and saved QA assessments from this browser? This cannot be undone.")) return;
     void clearHistory().then(() => {
       state.calls = [];
+      state.evalProgress = null;
+      clearProgress(typeof localStorage === "undefined" ? null : localStorage);
       state.selected = null;
       state.agentFilter = "";
       state.search = "";
