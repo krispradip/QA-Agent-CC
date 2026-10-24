@@ -1769,23 +1769,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* QA-STUDIO-V5 | Approved three-column prototype. Scoped to Studio only.
    Intentionally retains source IDs, assessment state and scoring logic. */
-body:has(.studio-v5) .sidebar{
-  background:linear-gradient(180deg,#fffafc,#fff6f9);color:#271c34;
-  border-right:1px solid #f5e1e8;box-shadow:none
-}
-body:has(.studio-v5) .brand strong{color:#24182e}
-body:has(.studio-v5) .brand strong span{color:#b11d55}
-body:has(.studio-v5) .brand small,
-body:has(.studio-v5) .nav-caption{color:#957988}
-body:has(.studio-v5) .brand-mark{background:linear-gradient(135deg,#e81b66,#b6004f)}
-body:has(.studio-v5) nav button{color:#33415c}
-body:has(.studio-v5) nav button span{color:#9a3b63}
-body:has(.studio-v5) nav button.active,
-body:has(.studio-v5) nav button:hover{
-  background:#fdeaf1;color:#bc1859;box-shadow:none;transform:none
-}
-body:has(.studio-v5) .sidebar-bottom{color:#9d637b;border-top-color:#f4dfe7}
-body:has(.studio-v5) .sidebar-bottom small{color:#a17a8c}
+/* Navigation remains burgundy and consistent across Home, Studio, and Reports.
+   Only the Studio content-area sizing overrides follow. */
 body:has(.studio-v5) .main{padding:20px clamp(14px,2vw,30px)}
 body:has(.studio-v5) .topbar{margin-bottom:14px;padding:0 0 12px;border-bottom:1px solid #f2dfe6}
 .studio-v5{display:flex!important;flex-direction:column;gap:12px;width:100%;min-width:0}
