@@ -169,3 +169,14 @@ test("Home hero retains approved copy without the decorative Q logo", () => {
   assert.match(hero,/improve with defensible evidence\./);
   assert.doesNotMatch(hero,/hero-logo|<span>Q<\/span>|EVIDENCE → QUALITY/);
 });
+
+
+test("All pages share burgundy sidebar and active navigation styling",async()=>{
+  const fs=await import("node:fs");
+  const css=fs.readFileSync(new URL("../public/css/app.css",import.meta.url),"utf8");
+  assert.match(css,/\.sidebar\{background:linear-gradient\(164deg,#43101f/);
+  assert.match(css,/nav button\.active,nav button:hover\{background:linear-gradient\(100deg,#e54b79/);
+  assert.doesNotMatch(css,/body:has\(\.studio-v5\) \.sidebar\s*\{/);
+  assert.doesNotMatch(css,/body:has\(\.studio-v5\) nav button(?:\.active|\.hover|\s*\{)/);
+  assert.match(css,/body:has\(\.studio-v5\) \.main\{padding:/);
+});
