@@ -12,6 +12,7 @@ import { GROUPS, MODES, DETERMINISTIC_RULES, linkedRules } from "./config.js";
 import { agents } from "./engine.js";
 import { renderDashboardSummary, renderScoreExplanation } from "./summary.js";
 import { coverageBreakdown } from "./reporting.js";
+import { progressLabels } from "./progress.js";
 
 export const esc = value =>
   String(value ?? "").replace(
@@ -170,10 +171,6 @@ export function overview(calls, rubric, selectedAgent = "", period = { mode:"all
         </button>
       </div>
 
-      <div class="hero-logo">
-        <span>Q</span>
-        <small>EVIDENCE → QUALITY</small>
-      </div>
     </section>
 
     <section class="panel"><div class="panel-heading"><div><span class="kicker">REPORTING PERIOD</span><h3>Interaction date</h3></div><button id="clearHistory" class="secondary">Clear saved history</button></div><div class="filters"><select id="report-period"><option value="all" ${period.mode==="all"?"selected":""}>All time</option><option value="last7" ${period.mode==="last7"?"selected":""}>Last 7 days</option><option value="last30" ${period.mode==="last30"?"selected":""}>Last 30 days</option><option value="month" ${period.mode==="month"?"selected":""}>This month</option><option value="custom" ${period.mode==="custom"?"selected":""}>Custom date range</option></select>${period.mode==="custom"?`<label>From <input type="date" id="period-from" value="${esc(period.from||"")}"></label><label>To <input type="date" id="period-to" value="${esc(period.to||"")}"></label>`:""}</div><p class="muted">Uses interaction dates, not evaluation dates. ${periodInfo.undatedExcluded||0} undated records excluded. ${esc(periodInfo.warning||"")}</p></section>
@@ -310,6 +307,10 @@ export function studio(state) {
       )
     : 0;
 
+  const timing=progressLabels(state.evalProgress,{
+    callCount:calls.length,handled
+  });
+
   const canEvaluateSelected = !running &&
     calls.some(c =>
       c.key === selected &&
@@ -317,16 +318,13 @@ export function studio(state) {
     );
 
   return `
-    <div class="studio studio-v3 studio-v4">
+    <div class="studio studio-v3 studio-v4 studio-v5">
+      <div class="studio-v5-dashboard">
       <div class="studio-intake-column">
         <section class="panel studio-intake-panel">
           <div class="panel-heading">
             <div>
-              <span class="kicker">
-                INTERACTION INTAKE
-              </span>
-
-              <h3>Choose your interaction source</h3>
+              <span class="kicker">Choose your interaction source</span>
             </div>
 
 
@@ -334,18 +332,21 @@ export function studio(state) {
 
           <div class="studio-intake-grid">
             <div class="intake-tile intake-paste">
-              <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">▤</span><strong>Paste transcript</strong></div>
-              <details class="paste-expander" open>
-                <summary>Paste a speaker-labelled transcript · expand / collapse</summary>
-                <textarea id="paste" rows="5" placeholder="Paste a Genesys transcript with speaker labels and timestamps…">${esc(state.pasteDraft || "")}</textarea>
-              </details>
-              <small>Automatically imports valid pasted transcripts</small>
+              <div class="intake-tile-heading">
+                <span class="intake-option-icon" aria-hidden="true">▤</span>
+                <strong>Text transcript</strong>
+                <span class="studio-v5-info" title="Paste a speaker-labelled call or chat transcript. Valid dialogue is imported automatically." aria-label="Transcript format information">ⓘ</span>
+              </div>
+              <small class="studio-v5-source-help">Paste a single call/interaction transcript or agent output.</small>
+              <textarea id="paste" rows="12" maxlength="50000" aria-label="Text transcript" placeholder="Paste transcript text or agent data here…">${esc(state.pasteDraft || "")}</textarea>
+              <div class="studio-v5-character-count"><span id="paste-count">${String(state.pasteDraft || "").length.toLocaleString("en-US")}</span>/50,000</div>
               <p id="import-feedback" class="muted" role="status" aria-live="polite">${esc(state.importFeedback || "")}</p>
             </div>
+            <div class="studio-v5-upload-stack">
             <div class="intake-tile intake-file">
               <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">⇧</span><strong>Upload transcript</strong></div>
               <label class="upload" for="file">
-                <span>⇧</span><b>Browse transcript file</b>
+                <span>⇧</span><b>Choose transcript file</b>
                 <small>TXT · TSV · CSV · JSON · SRT · VTT · MD</small>
               </label>
               <input id="file" type="file" accept=".txt,.tsv,.csv,.json,.srt,.vtt,.md,.log" hidden ${running ? "disabled" : ""}>
@@ -353,60 +354,11 @@ export function studio(state) {
             <div class="intake-tile intake-audio">
               <div class="intake-tile-heading"><span class="intake-option-icon" aria-hidden="true">♫</span><strong>Audio file</strong></div>
               <div class="upload audio-coming-soon">
-                <span>♫</span><b>Audio intake · upcoming</b>
-                <small>Not enabled in this prototype. Use a transcript export.</small>
+                <span>♫</span><b>Choose audio file</b>
+                <small>Not yet enabled in this prototype.</small>
               </div>
             </div>
-          </div>
-
-          <div class="toolbar">
-            <button class="primary"
-              id="all"
-              ${ready && !running ? "" : "disabled"}>
-              ${message?.startsWith("Stopped —") ? "▶ Resume pending" : "✦ Evaluate all"} (${ready})
-            </button>
-
-            <button class="secondary" id="rerunAll"
-              ${!running && calls.some(c=>["READY","ERROR","COMPLETE"].includes(c.status)) ? "" : "disabled"}>
-              ↻ Reassess full batch
-            </button>
-
-            <button class="secondary"
-              id="demo"
-              ${running ? "disabled" : ""}>
-              Load sample
-            </button>
-
-            <button class="secondary"
-              id="one"
-              ${canEvaluateSelected ? "" : "disabled"}>
-              ${calls.find(c => c.key === selected)?.status === "COMPLETE"
-                ? "Re-evaluate selected" : "Evaluate selected"}
-            </button>
-
-            <button class="secondary"
-              id="stopAfter"
-              ${running && !state.stopAfterCurrent ? "" : "disabled"}
-              aria-pressed="${state.stopAfterCurrent ? "true" : "false"}">
-              ${state.stopAfterCurrent ? "✓ Stop requested" : "Finish current & stop"}
-            </button>
-            <button class="secondary"
-              id="stop"
-              ${running ? "" : "disabled"}>
-              Stop evaluation
-            </button>
-
-            <button class="secondary"
-              id="json"
-              ${calls.length ? "" : "disabled"}>
-              Export JSON
-            </button>
-
-            <button class="secondary"
-              id="csv"
-              ${done ? "" : "disabled"}>
-              CSV
-            </button>
+            </div>
           </div>
 
           <div class="footnote">
@@ -429,12 +381,10 @@ export function studio(state) {
             <div><dt>Interactions</dt><dd>${calls.length}</dd></div>
             <div><dt>Status</dt><dd>${running?(state.stopAfterCurrent?"Stopping after current":"In progress"):ready?(message?.startsWith("Stopped —")?"Stopped · ":"Ready · ")+ready+" pending":done?"Last cycle complete":"Ready"}</dd></div></dl>
           </section>
-        <section class="panel">
+        <section class="panel studio-v5-progress">
           <div class="panel-heading">
             <div>
-              <span class="kicker">
-                LIVE BATCH PROGRESS
-              </span>
+              <span class="kicker">LIVE BATCH PROGRESS</span>
 
               <h3>Processing status</h3>
             </div>
@@ -451,9 +401,9 @@ export function studio(state) {
               ✓ Stop requested — completing the current interaction. No more interactions will start. Completed results will be retained.
             </p>` : ""}
           <div class="qa-timing-status" id="qa-timing-status" aria-live="off">
-            <span>Elapsed <strong id="qa-elapsed">00:00</strong></span>
-            <span>ETA <strong id="qa-eta">Calculating…</strong></span>
-            <span id="qa-batch-count">0 / 0 processed</span>
+            <span>Elapsed <strong id="qa-elapsed">${timing.elapsed}</strong></span>
+            <span>ETA <strong id="qa-eta">${timing.eta}</strong></span>
+            <span id="qa-batch-count">${timing.count}</span>
           </div>
           <div class="progress-numbers">
             <div>
@@ -481,6 +431,39 @@ export function studio(state) {
 
         </div>
       </div>
+      </div><!-- studio-v5-dashboard -->
+      <div class="studio-v5-toolbar" role="group" aria-label="Evaluation and batch actions">
+        <div class="studio-v5-action-group studio-v5-run">
+          <span class="studio-v5-group-label">EVALUATION</span>
+          <div class="studio-v5-actions">
+            <button class="primary" id="all" ${ready && !running ? "" : "disabled"}>
+              ${message?.startsWith("Stopped —") ? "▶ Resume pending" : "▷ Evaluate"}
+            </button>
+            <button class="secondary" id="stop" ${running ? "" : "disabled"}>■ Stop evaluation</button>
+            <button class="secondary" id="stopAfter" ${running && !state.stopAfterCurrent ? "" : "disabled"}
+              aria-pressed="${state.stopAfterCurrent ? "true" : "false"}">
+              ${state.stopAfterCurrent ? "✓ Stop requested" : "⚑ Finish current & stop"}
+            </button>
+          </div>
+        </div>
+        <div class="studio-v5-action-group studio-v5-batch">
+          <span class="studio-v5-group-label">BATCH ACTIONS</span>
+          <div class="studio-v5-actions">
+            <button class="secondary" id="one" ${canEvaluateSelected ? "" : "disabled"}>
+              ${calls.find(c => c.key === selected)?.status === "COMPLETE" ? "↻ Re-evaluate selected" : "Evaluate selected"}
+            </button>
+            <button class="secondary" id="clearBatch" ${!running && calls.length ? "" : "disabled"}>♧ Remove all batch</button>
+            <button class="secondary" id="demo" ${running ? "disabled" : ""}>▤ Load sample</button>
+          </div>
+        </div>
+        <div class="studio-v5-action-group studio-v5-exports">
+          <span class="studio-v5-group-label">EXPORT</span>
+          <div class="studio-v5-actions">
+            <button class="secondary" id="json" ${calls.length ? "" : "disabled"}>▤ Export JSON</button>
+            <button class="secondary" id="csv" ${done ? "" : "disabled"}>▦ CSV</button>
+          </div>
+        </div>
+      </div>
       <div class="studio-queue-row">
         <section class="panel">
           <div class="panel-heading">
@@ -497,37 +480,33 @@ export function studio(state) {
               </h3>
             </div>
 
+            <div class="filters">
+                        <input
+                          id="search"
+                          placeholder="Search agent or interaction ID"
+                          value="${esc(search)}">
+            
+                        <select id="filter">
+                          <option value="">All agents</option>
+            
+                          ${[
+                            ...new Set(
+                              calls.map(c => c.agent)
+                            )
+                          ].map(agent => `
+                            <option
+                              value="${esc(agent)}"
+                              ${agent === agentFilter
+                                ? "selected" : ""}>
+                              ${esc(agent)}
+                            </option>
+                          `).join("")}
+                        </select>
+                      </div>
             <div class="studio-queue-actions">
-              <span class="muted">
-                ${count(calls, "DUPLICATE")} duplicates
-                · ${failures} errors
-              </span>
               <button type="button" class="primary studio-open-reports" data-page-go="agents">Open Agents &amp; Reports →</button>
+              <span class="muted">${count(calls, "DUPLICATE")} duplicates · ${failures} errors</span>
             </div>
-          </div>
-
-          <div class="filters">
-            <input
-              id="search"
-              placeholder="Search agent or interaction ID"
-              value="${esc(search)}">
-
-            <select id="filter">
-              <option value="">All agents</option>
-
-              ${[
-                ...new Set(
-                  calls.map(c => c.agent)
-                )
-              ].map(agent => `
-                <option
-                  value="${esc(agent)}"
-                  ${agent === agentFilter
-                    ? "selected" : ""}>
-                  ${esc(agent)}
-                </option>
-              `).join("")}
-            </select>
           </div>
 
           <div class="table-scroll queue">
@@ -538,6 +517,7 @@ export function studio(state) {
                   <th>DURATION</th>
                   <th>QA</th>
                   <th>STATUS</th>
+                  <th>ACTIONS</th>
                 </tr>
               </thead>
 
@@ -562,12 +542,6 @@ export function studio(state) {
                           <b>${esc(c.agent)}</b>
                           <small>${esc(c.id || c.key)}</small>
                         </span>
-                        <button type="button" class="secondary studio-inspect-assessment"
-                          data-open="${esc(c.key)}"
-                          ${c.status === "COMPLETE" && c.findings?.length ? "" : "disabled"}
-                          aria-label="Inspect assessment for ${esc(c.agent)}">
-                          Inspect assessment →
-                        </button>
                       </div>
                     </td>
 
@@ -585,10 +559,18 @@ export function studio(state) {
                     <td>
                       ${chip(c.status)}
                     </td>
+                    <td class="studio-v5-inspect-cell">
+                      <button type="button" class="secondary studio-inspect-assessment"
+                        data-open="${esc(c.key)}"
+                        ${c.status === "COMPLETE" && c.findings?.length ? "" : "disabled"}
+                        aria-label="Inspect assessment for ${esc(c.agent)}">
+                        Inspect assessment →
+                      </button>
+                    </td>
                   </tr>
                 `).join("") || `
                   <tr>
-                    <td colspan="4" class="empty">
+                    <td colspan="5" class="empty">
                       Upload a transcript file to
                       populate this queue.
                     </td>
