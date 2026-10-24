@@ -12,6 +12,7 @@ import { GROUPS, MODES, DETERMINISTIC_RULES, linkedRules } from "./config.js";
 import { agents } from "./engine.js";
 import { renderDashboardSummary, renderScoreExplanation } from "./summary.js";
 import { coverageBreakdown } from "./reporting.js";
+import { progressLabels } from "./progress.js";
 
 export const esc = value =>
   String(value ?? "").replace(
@@ -306,6 +307,10 @@ export function studio(state) {
       )
     : 0;
 
+  const timing=progressLabels(state.evalProgress,{
+    callCount:calls.length,handled
+  });
+
   const canEvaluateSelected = !running &&
     calls.some(c =>
       c.key === selected &&
@@ -396,9 +401,9 @@ export function studio(state) {
               ✓ Stop requested — completing the current interaction. No more interactions will start. Completed results will be retained.
             </p>` : ""}
           <div class="qa-timing-status" id="qa-timing-status" aria-live="off">
-            <span>Elapsed <strong id="qa-elapsed">00:00</strong></span>
-            <span>ETA <strong id="qa-eta">Calculating…</strong></span>
-            <span id="qa-batch-count">${handled} / ${calls.length} processed</span>
+            <span>Elapsed <strong id="qa-elapsed">${timing.elapsed}</strong></span>
+            <span>ETA <strong id="qa-eta">${timing.eta}</strong></span>
+            <span id="qa-batch-count">${timing.count}</span>
           </div>
           <div class="progress-numbers">
             <div>
